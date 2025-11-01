@@ -1,0 +1,21 @@
+name: PR Title Check
+
+on:
+  pull_request:
+    types:
+      - opened
+      - edited
+      - synchronize
+
+jobs:
+  check-title:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: straw-hat-team/github-actions-workflows/semantic-pull-request@master
+        with:
+          types: |
+            feat
+            fix
+            refactor
+            chore
+            revert
