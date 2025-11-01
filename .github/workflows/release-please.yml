@@ -1,0 +1,74 @@
+name: Release Please
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+  pull-requests: write
+  attestations: write
+  id-token: write
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
+    steps:
+      - uses: googleapis/release-please-action@v4
+        id: release
+        with:
+          token: ${{ secrets.GH_PAT_RELEASE_PLEASE_ACTION }}
+          config-file: .github/release-please-config.json
+          manifest-file: .github/release-please-manifest.json
+          skip-github-release: true
+
+  build-and-upload:
+    needs: release-please
+    if: ${{ needs.release-please.outputs.release_created }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Build all platforms
+        run: bun run build:all
+
+      - name: Generate artifact attestations
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: dist/*
+
+      - name: Generate SBOM
+        uses: anchore/sbom-action@v0
+        with:
+          path: ./
+          artifact-name: sbom-spdx.json
+          output-file: ./sbom-spdx.json
+
+      - name: Attest SBOM
+        uses: actions/attest-sbom@v2
+        with:
+          subject-path: 'dist/*'
+          sbom-path: './sbom-spdx.json'
+
+      - name: Create release with all artifacts at once
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="${{ needs.release-please.outputs.tag_name }}"
+
+          # Create release with all artifacts at once (compatible with immutable releases)
+          gh release create "$TAG" \
+            --title "$TAG" \
+            --notes "See [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/$TAG/CHANGELOG.md) for details" \
+            --verify-tag \
+            dist/* \
+            sbom-spdx.json
