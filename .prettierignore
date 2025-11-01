@@ -1,0 +1,28 @@
+# Dependencies
+node_modules
+bun.lockb
+
+# Build output
+dist
+coverage
+
+# Cache
+.turbo
+.cache
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+
+# IDE
+.vscode
+.idea
+
+# Internal docs
+.trogonai
+.specstory
+
+# Release management
+CHANGELOG.md
