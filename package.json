@@ -1,0 +1,43 @@
+{
+  "name": "@trogonstack/aipm",
+  "version": "0.1.0",
+  "description": "AI Plugin Manager - Universal plugin manager for AI coding assistants (Claude Code, Cursor, Gemini CLI, and more). Sync plugins from multiple marketplaces.",
+  "type": "module",
+  "homepage": "https://github.com/TrogonStack/aipm",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/TrogonStack/aipm.git"
+  },
+  "bugs": {
+    "url": "https://github.com/TrogonStack/aipm/issues"
+  },
+  "license": "MIT",
+  "author": "Straw Hat Team",
+  "prettier": "@straw-hat/prettier-config",
+  "bin": {
+    "aipm": "./src/cli.ts"
+  },
+  "scripts": {
+    "test": "bun test",
+    "test:coverage": "bun test --coverage",
+    "typecheck": "tsc --noEmit",
+    "dev": "bun --watch src/cli.ts",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "ci": "bun run format:check && bun run typecheck && bun run test:coverage",
+    "build": "bun ./script/build.ts --single",
+    "build:all": "bun ./script/build.ts"
+  },
+  "devDependencies": {
+    "@straw-hat/prettier-config": "^3.1.5",
+    "@types/bun": "latest",
+    "prettier": "^3.6.2"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "yaml": "^2.8.1",
+    "zod": "^4.1.12"
+  }
+}
