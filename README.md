@@ -9,9 +9,11 @@ Inspired by [Claude Code's plugin marketplace system](https://docs.claude.com/en
 ## Quick Start
 
 ```bash
-# Install
-curl -fsSL https://github.com/TrogonStack/aipm/releases/latest/download/aipm-darwin-arm64 -o aipm
-chmod +x aipm && sudo mv aipm /usr/local/bin/
+# Install (recommended: using mise)
+mise use -g ubi:TrogonStack/aipm
+
+# Or download pre-built binary for your platform
+# See INSTALLATION.md for platform-specific download commands
 
 # Use
 aipm init
