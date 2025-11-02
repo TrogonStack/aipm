@@ -43,7 +43,7 @@ jobs:
       - name: Generate artifact attestations
         uses: actions/attest-build-provenance@v2
         with:
-          subject-path: dist/aipm-*/bin/*
+          subject-path: dist/aipm-*
 
       - name: Generate SBOM
         uses: anchore/sbom-action@v0
@@ -55,21 +55,13 @@ jobs:
       - name: Attest SBOM
         uses: actions/attest-sbom@v2
         with:
-          subject-path: 'dist/aipm-*/bin/*'
+          subject-path: 'dist/aipm-*'
           sbom-path: './sbom-spdx.json'
-
-      - name: Prepare release artifacts
-        run: |
-          mkdir -p release-artifacts
-          cp dist/aipm-windows-x64/bin/aipm.exe release-artifacts/aipm-windows-x64.exe
-          cp dist/aipm-linux-x64/bin/aipm release-artifacts/aipm-linux-x64
-          cp dist/aipm-linux-arm64/bin/aipm release-artifacts/aipm-linux-arm64
-          cp dist/aipm-darwin-x64/bin/aipm release-artifacts/aipm-darwin-x64
-          cp dist/aipm-darwin-arm64/bin/aipm release-artifacts/aipm-darwin-arm64
-          cp sbom-spdx.json release-artifacts/
 
       - name: Upload release artifacts
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ needs.release-please.outputs.tag_name }}
-          files: release-artifacts/*
+          files: |
+            dist/aipm-*
+            sbom-spdx.json

@@ -81,10 +81,10 @@ The built executables are standalone and can be distributed without requiring Bu
 
 ```bash
 # Copy to system path (after building)
-sudo cp dist/aipm-darwin-arm64/bin/aipm /usr/local/bin/
+sudo cp dist/aipm-darwin-arm64 /usr/local/bin/aipm
 
 # Or create a symlink
-sudo ln -s "$(pwd)/dist/aipm-darwin-arm64/bin/aipm" /usr/local/bin/aipm
+sudo ln -s "$(pwd)/dist/aipm-darwin-arm64" /usr/local/bin/aipm
 
 # Verify installation
 aipm --version

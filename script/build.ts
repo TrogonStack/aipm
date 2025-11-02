@@ -34,16 +34,16 @@ await $`rm -rf dist`;
 for (const target of targets) {
   console.log(`Building ${target.os}-${target.arch}`);
   const name = `aipm-${target.os}-${target.arch}`;
-  await $`mkdir -p dist/${name}/bin`;
+  await $`mkdir -p dist`;
 
-  const binary = target.os === 'windows' ? 'aipm.exe' : 'aipm';
+  const binary = target.os === 'windows' ? `${name}.exe` : name;
 
   const result = await Bun.build({
     entrypoints: ['./src/cli.ts'],
     target: 'bun',
     compile: {
       target: target.bunTarget,
-      outfile: `dist/${name}/bin/${binary}`,
+      outfile: `dist/${binary}`,
     },
   });
 
@@ -55,5 +55,5 @@ for (const target of targets) {
     process.exit(1);
   }
 
-  console.log(`✓ Built ${name}/bin/${binary}`);
+  console.log(`✓ Built ${binary}`);
 }
