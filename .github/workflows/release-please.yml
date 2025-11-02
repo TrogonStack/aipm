@@ -24,7 +24,6 @@ jobs:
           token: ${{ secrets.GH_PAT_RELEASE_PLEASE_ACTION }}
           config-file: .github/release-please-config.json
           manifest-file: .github/release-please-manifest.json
-          skip-github-release: true
 
   build-and-upload:
     needs: release-please
@@ -59,16 +58,10 @@ jobs:
           subject-path: 'dist/*'
           sbom-path: './sbom-spdx.json'
 
-      - name: Create release with all artifacts at once
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          TAG="${{ needs.release-please.outputs.tag_name }}"
-
-          # Create release with all artifacts at once (compatible with immutable releases)
-          gh release create "$TAG" \
-            --title "$TAG" \
-            --notes "See [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/$TAG/CHANGELOG.md) for details" \
-            --verify-tag \
-            dist/* \
+      - name: Upload release artifacts
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ needs.release-please.outputs.tag_name }}
+          files: |
+            dist/*
             sbom-spdx.json
