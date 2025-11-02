@@ -13,9 +13,4 @@ jobs:
     steps:
       - uses: straw-hat-team/github-actions-workflows/semantic-pull-request@master
         with:
-          types: |
-            feat
-            fix
-            refactor
-            chore
-            revert
+          github-token: ${{ secrets.GITHUB_TOKEN }}
