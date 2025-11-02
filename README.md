@@ -102,4 +102,4 @@ MIT License - see [LICENSE](./LICENSE) for details.
 
 ---
 
-**Built with ❤️ by the Straw Hat Team**
+**aipm** - Universal plugin manager for AI coding assistants
