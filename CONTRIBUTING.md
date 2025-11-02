@@ -75,20 +75,27 @@ bun run build:all
 
 This creates standalone executables in `dist/` - self-contained binaries that include the Bun runtime and all dependencies (~61MB per platform).
 
-#### Distribution
+#### Testing Your Local Build
 
-The built executables are standalone and can be distributed without requiring Bun or Node.js:
+To test your local build, install it to your system:
 
 ```bash
-# Copy to system path (after building)
+# Install your local build (macOS ARM64 example)
 sudo cp dist/aipm-darwin-arm64 /usr/local/bin/aipm
 
-# Or create a symlink
+# Or create a symlink to avoid copying
 sudo ln -s "$(pwd)/dist/aipm-darwin-arm64" /usr/local/bin/aipm
 
-# Verify installation
+# Verify it works
 aipm --version
 ```
+
+Use the appropriate binary for your platform:
+- macOS ARM64: `dist/aipm-darwin-arm64`
+- macOS Intel: `dist/aipm-darwin-x64`
+- Linux x64: `dist/aipm-linux-x64`
+- Linux ARM64: `dist/aipm-linux-arm64`
+- Windows x64: `dist/aipm-windows-x64.exe`
 
 ## Project Structure
 

@@ -43,7 +43,7 @@ jobs:
       - name: Generate artifact attestations
         uses: actions/attest-build-provenance@v2
         with:
-          subject-path: dist/aipm-*
+          subject-path: dist/*
 
       - name: Generate SBOM
         uses: anchore/sbom-action@v0
@@ -55,7 +55,7 @@ jobs:
       - name: Attest SBOM
         uses: actions/attest-sbom@v2
         with:
-          subject-path: 'dist/aipm-*'
+          subject-path: 'dist/*'
           sbom-path: './sbom-spdx.json'
 
       - name: Upload release artifacts
@@ -63,5 +63,5 @@ jobs:
         with:
           tag_name: ${{ needs.release-please.outputs.tag_name }}
           files: |
-            dist/aipm-*
+            dist/*
             sbom-spdx.json
