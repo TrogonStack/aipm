@@ -2,7 +2,7 @@
 
 **aipm (AI Plugin Manager) is a universal package manager that synchronizes plugins across AI coding assistants from multiple marketplaces.**
 
-Install plugins once, use them everywhere. aipm enables teams to share curated plugin collections across Claude Code, Cursor, Gemini CLI, and other AI assistants. Sync from local directories, git repositories, or remote URLs—all through a single configuration file.
+Install plugins once, use them everywhere. aipm enables teams to share curated plugin collections across Claude Code, Cursor, and other AI assistants. Sync from local directories, git repositories, or remote URLs—all through a single configuration file.
 
 ## Features
 
