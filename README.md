@@ -99,3 +99,7 @@ Contributions welcome! See [CONTRIBUTING.md](./CONTRIBUTING.md) for development 
 ## License
 
 MIT License - see [LICENSE](./LICENSE) for details.
+
+---
+
+**Built with ❤️ by the Straw Hat Team**
