@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.2.0](https://github.com/TrogonStack/aipm/compare/v0.1.0...v0.2.0) (2025-11-02)
+
+
+### Features
+
+* initial release ([9e3d300](https://github.com/TrogonStack/aipm/commit/9e3d3009ff96b435e8c7e53d9ad202485da224fb))
+
+## Changelog
+
 All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
