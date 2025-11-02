@@ -1,6 +1,32 @@
 # Installation Guide
 
-## Pre-built Binaries (Recommended)
+## mise (Recommended)
+
+[mise](https://mise.jdx.dev/) is a polyglot tool version manager. Install aipm from GitHub releases:
+
+```bash
+# Install using ubi backend
+mise use -g ubi:TrogonStack/aipm
+
+# Verify installation
+aipm --version
+```
+
+**Note**: Requires mise >= 2024.1.0 with [ubi backend](https://mise.jdx.dev/dev-tools/backends/ubi.html) support.
+
+### Install specific version
+
+```bash
+mise use -g ubi:TrogonStack/aipm@0.4.0
+```
+
+### Update
+
+```bash
+mise upgrade aipm
+```
+
+## Pre-built Binaries
 
 Download pre-built executables from the [releases page](https://github.com/TrogonStack/aipm/releases).
 
