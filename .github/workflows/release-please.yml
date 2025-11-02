@@ -58,11 +58,19 @@ jobs:
           subject-path: 'dist/*'
           sbom-path: './sbom-spdx.json'
 
-      - name: Upload release artifacts
-        uses: softprops/action-gh-release@v1
-        with:
-          tag_name: ${{ needs.release-please.outputs.tag_name }}
-          draft: false
-          files: |
-            dist/*
+      - name: Create release with all artifacts at once
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="${{ needs.release-please.outputs.tag_name }}"
+
+          # Delete the release if it exists (created by release-please)
+          gh release delete "$TAG" --yes || true
+
+          # Create release with all artifacts at once (compatible with immutable releases)
+          gh release create "$TAG" \
+            --title "$TAG" \
+            --notes "See [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/$TAG/CHANGELOG.md) for details" \
+            --verify-tag \
+            dist/* \
             sbom-spdx.json

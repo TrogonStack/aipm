@@ -17,8 +17,7 @@
     }
   },
   "release-search-depth": 10,
-  "draft": true,
-  "draft-pull-request": false,
+  "draft": false,
   "prerelease": false,
   "include-component-in-tag": false,
   "signoff": "Straw Hat Team Bot <61149376+sht-bot@users.noreply.github.com>"
