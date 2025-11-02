@@ -1,5 +1,6 @@
 import { rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
+import { DIR_CACHE } from '../constants';
 import type { MarketplaceSource } from '../schema';
 import { ensureDir, fileExists } from './fs';
 import { fetchRemoteMarketplaceManifest } from './marketplace';
@@ -26,7 +27,7 @@ export async function resolveMarketplacePath(
       }
 
       const globalDir = getGlobalDir();
-      const cacheDir = join(globalDir, 'cache', marketplaceName);
+      const cacheDir = join(globalDir, DIR_CACHE, marketplaceName);
 
       if (options.dryRun) {
         return cacheDir;

@@ -1,4 +1,12 @@
 import { join } from 'node:path';
+import {
+  DIR_CURSOR,
+  FILE_GITIGNORE,
+  FILE_GLOBAL_CONFIG,
+  FILE_PLUGINS_CONFIG,
+  FILE_PLUGINS_EXAMPLE,
+  FILE_PLUGINS_LOCAL,
+} from '../constants';
 import { fileExists } from '../helpers/fs';
 import { getGlobalDir } from '../helpers/paths';
 import type { PluginsConfig } from '../schema';
@@ -44,8 +52,8 @@ async function loadOptionalConfig(
 }
 
 export async function loadPluginsConfig(baseDir: string): Promise<PluginsConfig | null> {
-  const configPath = join(baseDir, '.cursor', 'plugins.json');
-  const localConfigPath = join(baseDir, '.cursor', 'plugins.local.json');
+  const configPath = join(baseDir, DIR_CURSOR, FILE_PLUGINS_CONFIG);
+  const localConfigPath = join(baseDir, DIR_CURSOR, FILE_PLUGINS_LOCAL);
 
   try {
     const file = Bun.file(configPath);
@@ -59,7 +67,7 @@ export async function loadPluginsConfig(baseDir: string): Promise<PluginsConfig 
     const config = parseResult.data;
 
     const globalDir = getGlobalDir();
-    const globalConfigPath = join(globalDir, 'config.json');
+    const globalConfigPath = join(globalDir, FILE_GLOBAL_CONFIG);
     const globalConfigExists = await fileExists(globalConfigPath);
 
     const { marketplaces: globalMarketplaces, plugins: globalPlugins } = globalConfigExists
@@ -90,10 +98,10 @@ export async function loadPluginsConfig(baseDir: string): Promise<PluginsConfig 
 
 export function getConfigPaths(baseDir: string) {
   return {
-    cursor: join(baseDir, '.cursor'),
-    plugins: join(baseDir, '.cursor', 'plugins.json'),
-    pluginsLocal: join(baseDir, '.cursor', 'plugins.local.json'),
-    pluginsExample: join(baseDir, '.cursor', 'plugins.local.json.example'),
-    gitignore: join(baseDir, '.gitignore'),
+    cursor: join(baseDir, DIR_CURSOR),
+    plugins: join(baseDir, DIR_CURSOR, FILE_PLUGINS_CONFIG),
+    pluginsLocal: join(baseDir, DIR_CURSOR, FILE_PLUGINS_LOCAL),
+    pluginsExample: join(baseDir, DIR_CURSOR, FILE_PLUGINS_EXAMPLE),
+    gitignore: join(baseDir, FILE_GITIGNORE),
   };
 }

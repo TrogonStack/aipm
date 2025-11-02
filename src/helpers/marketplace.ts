@@ -1,10 +1,11 @@
 import { join } from 'node:path';
+import { FILE_MARKETPLACE_MANIFEST } from '../constants';
 import type { MarketplaceManifest } from '../schema';
 import { MarketplaceManifestSchema } from '../schema';
 import { readJsonFile } from './fs';
 
 export async function loadMarketplaceManifest(marketplacePath: string): Promise<MarketplaceManifest | null> {
-  const manifestPath = join(marketplacePath, 'marketplace.json');
+  const manifestPath = join(marketplacePath, FILE_MARKETPLACE_MANIFEST);
 
   try {
     const manifest = await readJsonFile(manifestPath, MarketplaceManifestSchema);

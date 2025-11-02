@@ -1,11 +1,12 @@
 import { join } from 'node:path';
+import { DIR_CLAUDE_PLUGIN, FILE_PLUGIN_MANIFEST } from '../constants';
 import { isNodeError, PluginManifestInvalidError, PluginManifestNotFoundError } from '../errors';
 import type { PluginManifest } from '../schema';
 import { PluginManifestSchema } from '../schema';
 import { readJsonFile } from './fs';
 
 export async function loadPluginManifest(pluginPath: string): Promise<PluginManifest> {
-  const manifestPath = join(pluginPath, '.claude-plugin', 'plugin.json');
+  const manifestPath = join(pluginPath, DIR_CLAUDE_PLUGIN, FILE_PLUGIN_MANIFEST);
 
   try {
     const manifest = await readJsonFile(manifestPath, PluginManifestSchema);
