@@ -8,8 +8,10 @@ on:
       - synchronize
 
 permissions:
+  contents: read
   pull-requests: write
   statuses: read
+  checks: read
 
 jobs:
   check-title:
@@ -17,4 +19,4 @@ jobs:
     steps:
       - uses: straw-hat-team/github-actions-workflows/semantic-pull-request@master
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          github-token: ${{ github.token }}
