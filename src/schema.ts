@@ -89,3 +89,26 @@ export type InitOptions = {
   dryRun?: boolean;
   io?: IO;
 };
+
+/**
+ * Schema for AIPM environment variables
+ */
+export const ProcessEnvSchema = z.object({
+  /**
+   * Override the global AIPM directory
+   * Default: ~/.cursor/marketplace
+   */
+  AIPM_GLOBAL_DIR: z.string().optional(),
+
+  /**
+   * User's home directory (Unix/Mac)
+   */
+  HOME: z.string().optional(),
+
+  /**
+   * User's home directory (Windows)
+   */
+  USERPROFILE: z.string().optional(),
+});
+
+export type ProcessEnv = z.infer<typeof ProcessEnvSchema>;

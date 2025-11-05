@@ -1,10 +1,12 @@
 # aipm
 
-**A plugin manager for AI coding assistants.**
+**A Cursor plugin manager with Claude Code marketplace federation.**
 
-Install plugins once, use them everywhere. Manage curated plugin collections across Claude Code, Cursor, and other AI assistants from multiple marketplace sources.
+Manage Cursor plugins from multiple sources including AIPM marketplaces and **auto-discovered Claude Code marketplaces**. Install plugins to Cursor from Claude Code's ecosystem without manual configuration.
 
-Inspired by [Claude Code's plugin marketplace system](https://docs.claude.com/en/docs/claude-code/plugin-marketplaces), extended to work across multiple AI assistants.
+**Simple model**: AIPM manages Cursor's `.cursor/` directory and can read from Claude Code's `.claude/` marketplaces for plugin discovery.
+
+Inspired by [Claude Code's plugin marketplace system](https://docs.claude.com/en/docs/claude-code/plugin-marketplaces), extended with marketplace federation and nested plugin structure support.
 
 ## Quick Start
 
@@ -15,11 +17,36 @@ mise use -g ubi:TrogonStack/aipm
 # Or download pre-built binary for your platform
 # See INSTALLATION.md for platform-specific download commands
 
-# Use
+# Initialize (auto-detects Cursor or Claude Code)
 aipm init
+
+# Add a marketplace
 aipm marketplace add team https://github.com/your-org/plugins.git
+
+# Install plugins (works with nested structures)
 aipm plugin install my-plugin@team
+aipm plugin install document-skills/docx@anthropic  # nested plugin support
 ```
+
+### Claude Code Marketplace Federation
+
+If you have Claude Code installed, **AIPM automatically discovers its marketplaces**:
+
+```bash
+# AIPM scans ~/.claude/plugins/known_marketplaces.json automatically
+aipm list
+
+📦 Marketplaces:
+  • claude:anthropic-agent-skills (🤖 Claude Code auto-discovered)
+  • claude:claude-code-workflows (🤖 Claude Code auto-discovered)
+
+# Install Claude Code plugins to Cursor
+aipm plugin install algorithmic-art@claude:anthropic-agent-skills
+aipm plugin install document-skills/docx@claude:anthropic-agent-skills
+aipm sync  # Installs to .cursor/ for Cursor to use
+```
+
+**Federation Model**: AIPM reads from Claude Code's marketplaces but installs everything to `.cursor/` (for Cursor). This gives you access to Claude Code's plugin ecosystem in Cursor without manual configuration.
 
 ## Documentation
 

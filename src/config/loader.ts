@@ -7,6 +7,11 @@ import {
   FILE_PLUGINS_EXAMPLE,
   FILE_PLUGINS_LOCAL,
 } from '../constants';
+import {
+  convertClaudeMarketplaceToAIPM,
+  isClaudeCodeInstalled,
+  readClaudeCodeMarketplaces,
+} from '../helpers/claude-code-config';
 import { fileExists } from '../helpers/fs';
 import { getGlobalDir } from '../helpers/paths';
 import type { PluginsConfig } from '../schema';
@@ -76,11 +81,30 @@ export async function loadPluginsConfig(baseDir: string): Promise<PluginsConfig 
 
     const { marketplaces: localMarketplaces, plugins: localPlugins } = await loadOptionalConfig(localConfigPath);
 
+    const claudeMarketplaces: Record<string, ReturnType<typeof convertClaudeMarketplaceToAIPM>> = {};
+    if (await isClaudeCodeInstalled()) {
+      const claudeCodeMarketplaces = await readClaudeCodeMarketplaces();
+
+      for (const marketplace of claudeCodeMarketplaces) {
+        const prefixedName = `claude:${marketplace.name}`;
+
+        if (globalMarketplaces[prefixedName] || config.marketplaces[prefixedName] || localMarketplaces[prefixedName]) {
+          console.warn(
+            `⚠️  Skipping Claude Code marketplace '${prefixedName}' - name conflict with existing AIPM marketplace`,
+          );
+          continue;
+        }
+
+        claudeMarketplaces[prefixedName] = convertClaudeMarketplaceToAIPM(marketplace);
+      }
+    }
+
     return {
       marketplaces: {
         ...globalMarketplaces,
         ...config.marketplaces,
         ...localMarketplaces,
+        ...claudeMarketplaces,
       },
       plugins: {
         ...globalPlugins,

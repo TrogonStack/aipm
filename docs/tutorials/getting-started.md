@@ -1,11 +1,12 @@
 # Getting Started with aipm
 
-A hands-on tutorial to get you started with aipm in 15 minutes.
+A hands-on tutorial to get you started with aipm in 15 minutes. Works with both **Cursor** and **Claude Code**!
 
 ## Prerequisites
 
 - `aipm` installed ([Installation Guide](../../INSTALLATION.md))
 - A project directory (we'll create one for testing)
+- Either Cursor or Claude Code (aipm auto-detects which one you're using)
 
 ## Part 1: Verify Installation
 
@@ -20,6 +21,8 @@ aipm --help
 ```
 
 Expected output: Version number (e.g., `0.1.0`)
+
+> **Note for Claude Code users**: AIPM is a Cursor plugin manager. It can discover and install plugins from Claude Code's marketplaces, but always installs them to Cursor's `.cursor/` directory. See the "Working with Claude Code's Official Marketplaces" section below.
 
 ## Part 2: Create Your First Plugin
 
@@ -152,6 +155,34 @@ When you run `aipm list`, you should see:
 🔌 Plugins:
   ✓ hello-world@my-marketplace
 ```
+
+## Working with Claude Code's Official Marketplaces
+
+If you have Claude Code installed with official Anthropic marketplaces, **AIPM automatically discovers them**:
+
+```bash
+# No configuration needed - Claude Code marketplaces are auto-discovered!
+aipm list
+# Shows: claude:anthropic-agent-skills (auto-discovered from Claude Code)
+
+# Install Claude Code plugins to Cursor
+aipm plugin install algorithmic-art@claude:anthropic-agent-skills
+aipm plugin install document-skills/docx@claude:anthropic-agent-skills  # nested plugin!
+
+# Sync to .cursor/ directory (for Cursor to use)
+aipm sync
+
+# View all available plugins from both AIPM and Claude Code
+aipm plugin search
+```
+
+**How it works**:
+
+- AIPM reads `~/.claude/plugins/known_marketplaces.json` to discover Claude Code's marketplaces
+- Plugins are installed to `.cursor/` (AIPM never modifies `.claude/`)
+- You get the best of both worlds: Claude Code's marketplaces work in Cursor!
+
+**Nested Plugin Structure**: Claude Code's marketplaces use nested directories (like `document-skills/docx/`). AIPM automatically discovers all plugins regardless of nesting depth.
 
 ## Next Steps
 

@@ -1,6 +1,7 @@
 import { join } from 'node:path';
 import { z } from 'zod';
 import { getConfigPaths, loadPluginsConfig } from '../config/loader';
+import { DIR_CURSOR } from '../constants';
 import { fileExists, writeJsonFile } from '../helpers/fs';
 import { resolveMarketplacePath } from '../helpers/git';
 import { defaultIO } from '../helpers/io';
@@ -119,7 +120,7 @@ export async function pluginInstall(options: unknown): Promise<void> {
     await writeJsonFile(targetPath, updatedConfig, PluginsConfigSchema);
     defaultIO.logSuccess(`Enabled plugin '${cmd.pluginId}' in ${configName}`);
 
-    const cursorDir = join(cwd, '.cursor');
+    const cursorDir = join(cwd, DIR_CURSOR);
     const syncResult = await syncPluginToCursor(pluginPath, marketplaceName, pluginName, cursorDir);
     const summary = formatSyncResult(syncResult);
 

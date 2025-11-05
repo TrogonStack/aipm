@@ -155,8 +155,8 @@ describe('marketplace utilities', () => {
     });
 
     test('falls back to directory scanning when no manifest', async () => {
-      await mkdir(join(testDir, 'plugin-a'));
-      await mkdir(join(testDir, 'plugin-b'));
+      await mkdir(join(testDir, 'plugin-a', '.claude-plugin'), { recursive: true });
+      await mkdir(join(testDir, 'plugin-b', '.claude-plugin'), { recursive: true });
       await mkdir(join(testDir, '.hidden'));
 
       const plugins = await getAvailablePlugins(testDir, null);
@@ -167,13 +167,144 @@ describe('marketplace utilities', () => {
     });
 
     test('excludes dot directories when scanning', async () => {
-      await mkdir(join(testDir, 'visible-plugin'));
+      await mkdir(join(testDir, 'visible-plugin', '.claude-plugin'), { recursive: true });
       await mkdir(join(testDir, '.git'));
       await mkdir(join(testDir, '.claude-plugin'));
 
       const plugins = await getAvailablePlugins(testDir, null);
 
       expect(plugins).toEqual(['visible-plugin']);
+    });
+
+    test('handles deep nesting beyond 3 levels', async () => {
+      // Create a structure 6 levels deep
+      await mkdir(join(testDir, 'level1/level2/level3/level4/level5/deep-plugin/.claude-plugin'), {
+        recursive: true,
+      });
+
+      const plugins = await getAvailablePlugins(testDir, null);
+
+      expect(plugins).toContain('level1/level2/level3/level4/level5/deep-plugin');
+    });
+
+    test('finds plugins at multiple nesting levels', async () => {
+      await mkdir(join(testDir, 'top-level/.claude-plugin'), { recursive: true });
+      await mkdir(join(testDir, 'one/nested/.claude-plugin'), { recursive: true });
+      await mkdir(join(testDir, 'one/two/three/very-nested/.claude-plugin'), { recursive: true });
+
+      const plugins = await getAvailablePlugins(testDir, null);
+
+      expect(plugins).toContain('top-level');
+      expect(plugins).toContain('one/nested');
+      expect(plugins).toContain('one/two/three/very-nested');
+      expect(plugins).toHaveLength(3);
+    });
+
+    test('handles symlink loops without hanging', async () => {
+      await mkdir(join(testDir, 'loop-a'), { recursive: true });
+      await mkdir(join(testDir, 'loop-b'), { recursive: true });
+
+      // Create circular symlinks (may fail on some systems, that's ok)
+      try {
+        const { symlink } = await import('node:fs/promises');
+        await symlink(join(testDir, 'loop-b'), join(testDir, 'loop-a/link-to-b'), 'dir');
+        await symlink(join(testDir, 'loop-a'), join(testDir, 'loop-b/link-to-a'), 'dir');
+      } catch {
+        // Symlinks might fail on some systems (Windows), skip this part
+      }
+
+      // Add a real plugin in the same directory
+      await mkdir(join(testDir, 'real-plugin/.claude-plugin'), { recursive: true });
+
+      const plugins = await getAvailablePlugins(testDir, null);
+
+      // Should find the real plugin and not hang
+      expect(plugins).toContain('real-plugin');
+    });
+
+    test('does not escape marketplace directory via symlink', async () => {
+      // Create a plugin inside the marketplace
+      await mkdir(join(testDir, 'valid-plugin/.claude-plugin'), { recursive: true });
+
+      // Try to create a symlink pointing outside (to /tmp or /etc)
+      try {
+        const { symlink } = await import('node:fs/promises');
+        await symlink('/tmp', join(testDir, 'escape-link'), 'dir');
+      } catch {
+        // May fail on some systems, that's ok
+      }
+
+      const plugins = await getAvailablePlugins(testDir, null);
+
+      // Should only find the valid plugin, not traverse outside
+      expect(plugins).toEqual(['valid-plugin']);
+    });
+
+    test('rejects symlinked plugin with marker outside marketplace', async () => {
+      // Create a directory outside the marketplace with a .claude-plugin marker
+      const outsideDir = await mkdtemp(join(tmpdir(), 'aipm-outside-'));
+
+      try {
+        await mkdir(join(outsideDir, 'evil-plugin/.claude-plugin'), { recursive: true });
+
+        // Create a symlink inside the marketplace pointing to the outside plugin
+        try {
+          const { symlink } = await import('node:fs/promises');
+          await symlink(join(outsideDir, 'evil-plugin'), join(testDir, 'evil-link'), 'dir');
+        } catch {
+          // May fail on some systems (Windows), skip this test
+          return;
+        }
+
+        // Add a valid plugin for comparison
+        await mkdir(join(testDir, 'valid-plugin/.claude-plugin'), { recursive: true });
+
+        const plugins = await getAvailablePlugins(testDir, null);
+
+        // Should only find the valid plugin, not the symlinked evil plugin
+        expect(plugins).toContain('valid-plugin');
+        expect(plugins).not.toContain('evil-link');
+        expect(plugins).not.toContain('evil-plugin');
+        expect(plugins).toHaveLength(1);
+      } finally {
+        await rm(outsideDir, { recursive: true, force: true });
+      }
+    });
+
+    test('handles mixed valid plugins and organizational folders', async () => {
+      // Organizational folders without .claude-plugin
+      await mkdir(join(testDir, 'available-plugins'), { recursive: true });
+      await mkdir(join(testDir, 'available-scripts'), { recursive: true });
+
+      // Real plugins nested inside
+      await mkdir(join(testDir, 'available-plugins/plugin-one/.claude-plugin'), { recursive: true });
+      await mkdir(join(testDir, 'available-plugins/plugin-two/.claude-plugin'), { recursive: true });
+      await mkdir(join(testDir, 'available-scripts/script-one/.claude-plugin'), { recursive: true });
+
+      const plugins = await getAvailablePlugins(testDir, null);
+
+      expect(plugins).toContain('available-plugins/plugin-one');
+      expect(plugins).toContain('available-plugins/plugin-two');
+      expect(plugins).toContain('available-scripts/script-one');
+      expect(plugins).not.toContain('available-plugins');
+      expect(plugins).not.toContain('available-scripts');
+      expect(plugins).toHaveLength(3);
+    });
+
+    test('returns correct paths for getPluginSourcePath integration', async () => {
+      // Create a nested plugin structure
+      await mkdir(join(testDir, 'available-plugins/nested-plugin/.claude-plugin'), { recursive: true });
+
+      // Discover plugins
+      const plugins = await getAvailablePlugins(testDir, null);
+
+      // Verify the plugin is found with correct relative path
+      expect(plugins).toContain('available-plugins/nested-plugin');
+      expect(plugins.length).toBeGreaterThan(0);
+
+      // Verify getPluginSourcePath constructs the correct full path
+      const fullPath = getPluginSourcePath(testDir, plugins[0]!, null);
+      expect(fullPath).toBe(join(testDir, 'available-plugins/nested-plugin'));
     });
   });
 
@@ -218,6 +349,15 @@ describe('marketplace utilities', () => {
       const path = getPluginSourcePath(testDir, 'plugin', manifest);
 
       expect(path).toBe(join(testDir, '../elsewhere/plugin'));
+    });
+
+    test('handles nested plugin paths correctly when no manifest', async () => {
+      // When getAvailablePlugins returns a nested path like 'available-plugins/my-plugin'
+      // getPluginSourcePath should construct the correct full path
+      const pluginRelativePath = join('available-plugins', 'my-plugin');
+      const path = getPluginSourcePath(testDir, pluginRelativePath, null);
+
+      expect(path).toBe(join(testDir, 'available-plugins', 'my-plugin'));
     });
   });
 
