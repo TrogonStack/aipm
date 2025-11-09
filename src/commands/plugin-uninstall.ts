@@ -2,6 +2,7 @@ import { rm } from 'node:fs/promises';
 import { join } from 'node:path';
 import { z } from 'zod';
 import { getConfigPaths, loadPluginsConfig } from '../config/loader';
+import { DIR_CURSOR, DIR_MARKETPLACE } from '../constants';
 import { fileExists, writeJsonFile } from '../helpers/fs';
 import { defaultIO } from '../helpers/io';
 import { PluginsConfigSchema } from '../schema';
@@ -53,7 +54,7 @@ export async function pluginUninstall(options: unknown): Promise<void> {
     if (cmd.dryRun) {
       defaultIO.logInfo(`[DRY RUN] Would remove plugin '${cmd.pluginId}' from ${configName}`);
       if (cmd.removeFiles) {
-        defaultIO.logInfo(`[DRY RUN] Would delete files from .cursor/marketplace/`);
+        defaultIO.logInfo('[DRY RUN] Would delete files from .cursor/marketplace/');
       }
     } else {
       await writeJsonFile(targetPath, updatedConfig, PluginsConfigSchema);
@@ -63,7 +64,7 @@ export async function pluginUninstall(options: unknown): Promise<void> {
         const [pluginName, marketplaceName] = cmd.pluginId.split('@');
 
         if (pluginName && marketplaceName) {
-          const installedPath = join(cwd, '.cursor', 'marketplace', marketplaceName, pluginName);
+          const installedPath = join(cwd, DIR_CURSOR, DIR_MARKETPLACE, marketplaceName, pluginName);
 
           if (await fileExists(installedPath)) {
             await rm(installedPath, { recursive: true, force: true });

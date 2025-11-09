@@ -2,6 +2,7 @@ import { rm, stat } from 'node:fs/promises';
 import { join } from 'node:path';
 import { z } from 'zod';
 import { getConfigPaths, loadPluginsConfig } from '../config/loader';
+import { DIR_CURSOR, DIR_MARKETPLACE } from '../constants';
 import { ensureDir, fileExists } from '../helpers/fs';
 import { resolveMarketplacePath } from '../helpers/git';
 import { defaultIO } from '../helpers/io';
@@ -20,6 +21,7 @@ export async function sync(options: SyncOptions = {}): Promise<void> {
 
   const cwd = cmd.cwd || process.cwd();
   const paths = getConfigPaths(cwd);
+  const cursorDir = join(cwd, DIR_CURSOR);
 
   try {
     if (!(await fileExists(paths.plugins))) {
@@ -44,11 +46,9 @@ export async function sync(options: SyncOptions = {}): Promise<void> {
 
     console.log(`\n🔄 Syncing ${enabledPlugins.length} enabled plugin(s)...\n`);
 
-    const cursorDir = join(cwd, '.cursor');
-
     if (!cmd.dryRun) {
       // Clean up old marketplace directory if it exists
-      const oldMarketplaceDir = join(cursorDir, 'marketplace');
+      const oldMarketplaceDir = join(cursorDir, DIR_MARKETPLACE);
       if (await fileExists(oldMarketplaceDir)) {
         await rm(oldMarketplaceDir, { recursive: true, force: true });
       }

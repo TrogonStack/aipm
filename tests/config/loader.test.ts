@@ -3,7 +3,7 @@ import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { loadPluginsConfig } from '../../src/config/loader';
-import { getGlobalDir } from '../../src/helpers/paths';
+import { getGlobalDir, resetEnvCache } from '../../src/helpers/paths';
 
 describe('loadPluginsConfig', () => {
   let testDir: string;
@@ -13,10 +13,12 @@ describe('loadPluginsConfig', () => {
     testDir = await mkdtemp(join(tmpdir(), 'cursor-loader-test-'));
     originalHome = process.env.HOME;
     process.env.HOME = testDir;
+    resetEnvCache(); // Reset cache after modifying env
   });
 
   afterEach(async () => {
     process.env.HOME = originalHome;
+    resetEnvCache(); // Reset cache after cleanup
     await rm(testDir, { recursive: true, force: true });
   });
 

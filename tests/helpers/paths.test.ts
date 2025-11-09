@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { getGlobalDir } from '../../src/helpers/paths';
+import { getGlobalDir, resetEnvCache } from '../../src/helpers/paths';
 
 describe('getGlobalDir', () => {
   test('returns override value when provided', () => {
@@ -12,6 +12,7 @@ describe('getGlobalDir', () => {
 
     try {
       process.env.AIPM_GLOBAL_DIR = '/custom/marketplace';
+      resetEnvCache(); // Reset cache after modifying env
       expect(getGlobalDir()).toBe('/custom/marketplace');
     } finally {
       if (originalEnv) {
@@ -19,6 +20,7 @@ describe('getGlobalDir', () => {
       } else {
         delete process.env.AIPM_GLOBAL_DIR;
       }
+      resetEnvCache(); // Reset cache after cleanup
     }
   });
 
@@ -27,6 +29,7 @@ describe('getGlobalDir', () => {
 
     try {
       process.env.AIPM_GLOBAL_DIR = '/env/marketplace';
+      resetEnvCache();
       const override = '/override/marketplace';
 
       expect(getGlobalDir(override)).toBe(override);
@@ -36,6 +39,7 @@ describe('getGlobalDir', () => {
       } else {
         delete process.env.AIPM_GLOBAL_DIR;
       }
+      resetEnvCache();
     }
   });
 
@@ -44,6 +48,7 @@ describe('getGlobalDir', () => {
 
     try {
       delete process.env.AIPM_GLOBAL_DIR;
+      resetEnvCache();
 
       const globalDir = getGlobalDir();
       expect(globalDir).toContain('.cursor');
@@ -53,6 +58,7 @@ describe('getGlobalDir', () => {
       if (originalEnv) {
         process.env.AIPM_GLOBAL_DIR = originalEnv;
       }
+      resetEnvCache();
     }
   });
 
@@ -65,12 +71,14 @@ describe('getGlobalDir', () => {
       delete process.env.HOME;
       delete process.env.USERPROFILE;
       delete process.env.AIPM_GLOBAL_DIR;
+      resetEnvCache();
 
       expect(() => getGlobalDir()).toThrow('Could not determine home directory');
     } finally {
       if (originalHome) process.env.HOME = originalHome;
       if (originalUserProfile) process.env.USERPROFILE = originalUserProfile;
       if (originalEnv) process.env.AIPM_GLOBAL_DIR = originalEnv;
+      resetEnvCache();
     }
   });
 
@@ -83,6 +91,7 @@ describe('getGlobalDir', () => {
       delete process.env.HOME;
       delete process.env.USERPROFILE;
       delete process.env.AIPM_GLOBAL_DIR;
+      resetEnvCache();
 
       const override = '/tmp/override-marketplace';
       expect(getGlobalDir(override)).toBe(override);
@@ -90,6 +99,7 @@ describe('getGlobalDir', () => {
       if (originalHome) process.env.HOME = originalHome;
       if (originalUserProfile) process.env.USERPROFILE = originalUserProfile;
       if (originalEnv) process.env.AIPM_GLOBAL_DIR = originalEnv;
+      resetEnvCache();
     }
   });
 
@@ -98,6 +108,7 @@ describe('getGlobalDir', () => {
 
     try {
       process.env.AIPM_GLOBAL_DIR = 'D:\\cursor-data\\marketplace';
+      resetEnvCache();
       expect(getGlobalDir()).toBe('D:\\cursor-data\\marketplace');
     } finally {
       if (originalEnv) {
@@ -105,6 +116,7 @@ describe('getGlobalDir', () => {
       } else {
         delete process.env.AIPM_GLOBAL_DIR;
       }
+      resetEnvCache();
     }
   });
 });

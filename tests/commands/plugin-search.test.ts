@@ -19,11 +19,11 @@ describe('plugin-search', () => {
   describe('list all plugins', () => {
     test('should list all available plugins from all marketplaces', async () => {
       const marketplace1Dir = join(testDir, 'marketplace1');
-      await mkdir(join(marketplace1Dir, 'plugin-a'), { recursive: true });
-      await mkdir(join(marketplace1Dir, 'plugin-b'), { recursive: true });
+      await mkdir(join(marketplace1Dir, 'plugin-a', '.claude-plugin'), { recursive: true });
+      await mkdir(join(marketplace1Dir, 'plugin-b', '.claude-plugin'), { recursive: true });
 
       const marketplace2Dir = join(testDir, 'marketplace2');
-      await mkdir(join(marketplace2Dir, 'plugin-c'), { recursive: true });
+      await mkdir(join(marketplace2Dir, 'plugin-c', '.claude-plugin'), { recursive: true });
 
       const pluginsPath = join(testDir, '.cursor', 'plugins.json');
       await writeFile(
@@ -124,9 +124,9 @@ describe('plugin-search', () => {
   describe('search with query', () => {
     test('should filter plugins by name', async () => {
       const marketplaceDir = join(testDir, 'marketplace');
-      await mkdir(join(marketplaceDir, 'react-helper'), { recursive: true });
-      await mkdir(join(marketplaceDir, 'vue-helper'), { recursive: true });
-      await mkdir(join(marketplaceDir, 'angular-tool'), { recursive: true });
+      await mkdir(join(marketplaceDir, 'react-helper', '.claude-plugin'), { recursive: true });
+      await mkdir(join(marketplaceDir, 'vue-helper', '.claude-plugin'), { recursive: true });
+      await mkdir(join(marketplaceDir, 'angular-tool', '.claude-plugin'), { recursive: true });
 
       const pluginsPath = join(testDir, '.cursor', 'plugins.json');
       await writeFile(
@@ -176,9 +176,9 @@ describe('plugin-search', () => {
         }),
       );
 
-      await mkdir(join(marketplaceDir, 'plugin-a'), { recursive: true });
-      await mkdir(join(marketplaceDir, 'plugin-b'), { recursive: true });
-      await mkdir(join(marketplaceDir, 'plugin-c'), { recursive: true });
+      await mkdir(join(marketplaceDir, 'plugin-a', '.claude-plugin'), { recursive: true });
+      await mkdir(join(marketplaceDir, 'plugin-b', '.claude-plugin'), { recursive: true });
+      await mkdir(join(marketplaceDir, 'plugin-c', '.claude-plugin'), { recursive: true });
 
       const pluginsPath = join(testDir, '.cursor', 'plugins.json');
       await writeFile(
@@ -201,10 +201,10 @@ describe('plugin-search', () => {
 
     test('should filter plugins by marketplace name', async () => {
       const marketplace1Dir = join(testDir, 'react-plugins');
-      await mkdir(join(marketplace1Dir, 'plugin-a'), { recursive: true });
+      await mkdir(join(marketplace1Dir, 'plugin-a', '.claude-plugin'), { recursive: true });
 
       const marketplace2Dir = join(testDir, 'vue-plugins');
-      await mkdir(join(marketplace2Dir, 'plugin-b'), { recursive: true });
+      await mkdir(join(marketplace2Dir, 'plugin-b', '.claude-plugin'), { recursive: true });
 
       const pluginsPath = join(testDir, '.cursor', 'plugins.json');
       await writeFile(
@@ -231,7 +231,7 @@ describe('plugin-search', () => {
 
     test('should return no results for non-matching query', async () => {
       const marketplaceDir = join(testDir, 'marketplace');
-      await mkdir(join(marketplaceDir, 'plugin-a'), { recursive: true });
+      await mkdir(join(marketplaceDir, 'plugin-a', '.claude-plugin'), { recursive: true });
 
       const pluginsPath = join(testDir, '.cursor', 'plugins.json');
       await writeFile(
@@ -254,7 +254,7 @@ describe('plugin-search', () => {
 
     test('should be case-insensitive', async () => {
       const marketplaceDir = join(testDir, 'marketplace');
-      await mkdir(join(marketplaceDir, 'ReactHelper'), { recursive: true });
+      await mkdir(join(marketplaceDir, 'ReactHelper', '.claude-plugin'), { recursive: true });
 
       const pluginsPath = join(testDir, '.cursor', 'plugins.json');
       await writeFile(
@@ -308,8 +308,8 @@ describe('plugin-search', () => {
   describe('installed status', () => {
     test('should indicate which plugins are installed', async () => {
       const marketplaceDir = join(testDir, 'marketplace');
-      await mkdir(join(marketplaceDir, 'plugin-a'), { recursive: true });
-      await mkdir(join(marketplaceDir, 'plugin-b'), { recursive: true });
+      await mkdir(join(marketplaceDir, 'plugin-a', '.claude-plugin'), { recursive: true });
+      await mkdir(join(marketplaceDir, 'plugin-b', '.claude-plugin'), { recursive: true });
 
       const pluginsPath = join(testDir, '.cursor', 'plugins.json');
       await writeFile(
@@ -321,6 +321,65 @@ describe('plugin-search', () => {
           plugins: {
             'plugin-a@local': { enabled: true },
           },
+        }),
+      );
+
+      const options = {
+        cwd: testDir,
+      };
+
+      await pluginSearch(options);
+    });
+  });
+
+  describe('nested directory structure', () => {
+    test('should discover plugins in nested subdirectories', async () => {
+      const marketplaceDir = join(testDir, 'marketplace');
+      // Create a structure like:
+      // marketplace/
+      //   available plugins/
+      //     plugin-a/
+      //     plugin-b/
+      //   available scripts/
+      //     script-a/
+      await mkdir(join(marketplaceDir, 'available plugins', 'plugin-a', '.claude-plugin'), { recursive: true });
+      await mkdir(join(marketplaceDir, 'available plugins', 'plugin-b', '.claude-plugin'), { recursive: true });
+      await mkdir(join(marketplaceDir, 'available scripts', 'script-a', '.claude-plugin'), { recursive: true });
+
+      const pluginsPath = join(testDir, '.cursor', 'plugins.json');
+      await writeFile(
+        pluginsPath,
+        JSON.stringify({
+          marketplaces: {
+            local: { source: 'directory', path: './marketplace' },
+          },
+          plugins: {},
+        }),
+      );
+
+      const options = {
+        cwd: testDir,
+      };
+
+      await pluginSearch(options);
+    });
+
+    test('should not treat organizational folders as plugins', async () => {
+      const marketplaceDir = join(testDir, 'marketplace');
+      // Create organizational folders without .claude-plugin markers
+      await mkdir(join(marketplaceDir, 'available plugins'), { recursive: true });
+      await mkdir(join(marketplaceDir, 'available scripts'), { recursive: true });
+      // Add actual plugins inside
+      await mkdir(join(marketplaceDir, 'available plugins', 'real-plugin', '.claude-plugin'), { recursive: true });
+
+      const pluginsPath = join(testDir, '.cursor', 'plugins.json');
+      await writeFile(
+        pluginsPath,
+        JSON.stringify({
+          marketplaces: {
+            local: { source: 'directory', path: './marketplace' },
+          },
+          plugins: {},
         }),
       );
 
