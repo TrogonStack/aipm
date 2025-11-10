@@ -1,19 +1,81 @@
 import { readdir, realpath } from 'node:fs/promises';
 import { join, relative, sep } from 'node:path';
 import { DIR_CLAUDE_PLUGIN, FILE_MARKETPLACE_MANIFEST } from '../constants';
-import type { MarketplaceManifest } from '../schema';
+import { isNodeError } from '../errors';
+import type { MarketplaceManifest, MarketplaceType } from '../schema';
 import { MarketplaceManifestSchema } from '../schema';
-import { fileExists, readJsonFile } from './fs';
+import { fileExists, JsonFileError, readJsonFile } from './fs';
 
-export async function loadMarketplaceManifest(marketplacePath: string): Promise<MarketplaceManifest | null> {
+/**
+ * Determines the marketplace type based on the marketplace name.
+ * Claude Code marketplaces are prefixed with 'claude:'.
+ */
+export function getMarketplaceType(marketplaceName: string): MarketplaceType {
+  return marketplaceName.startsWith('claude:') ? 'claude' : 'aipm';
+}
+
+export async function loadAipmMarketplaceManifest(marketplacePath: string): Promise<MarketplaceManifest | null> {
   const manifestPath = join(marketplacePath, FILE_MARKETPLACE_MANIFEST);
 
   try {
-    const manifest = await readJsonFile(manifestPath, MarketplaceManifestSchema);
-    return manifest;
-  } catch (_error) {
+    return await readJsonFile(manifestPath, MarketplaceManifestSchema);
+  } catch (error) {
+    // Handle missing file gracefully
+    if (isNodeError(error) && error.code === 'ENOENT') {
+      return null;
+    }
+
+    // Handle JSON parsing/validation errors
+    if (error instanceof JsonFileError) {
+      console.warn('\n⚠️  AIPM: Failed to parse marketplace manifest');
+      console.warn(`    File: ${manifestPath}`);
+      if (error.cause && typeof error.cause === 'object' && 'issues' in error.cause) {
+        console.warn(`    Error: ${JSON.stringify(error.cause.issues, null, 2)}`);
+      } else if (error.cause) {
+        console.warn(`    Error: ${JSON.stringify(error.cause, null, 2)}`);
+      }
+      console.warn('    This might be due to a corrupted or invalid manifest file.');
+      console.warn('    Please report this at: https://github.com/TrogonStack/aipm/discussions/categories/buggy\n');
+    }
     return null;
   }
+}
+
+export async function loadClaudeCodeMarketplaceManifest(marketplacePath: string): Promise<MarketplaceManifest | null> {
+  const claudePluginManifestPath = join(marketplacePath, DIR_CLAUDE_PLUGIN, FILE_MARKETPLACE_MANIFEST);
+
+  try {
+    return await readJsonFile(claudePluginManifestPath, MarketplaceManifestSchema);
+  } catch (error) {
+    // Handle missing file gracefully
+    if (isNodeError(error) && error.code === 'ENOENT') {
+      return null;
+    }
+
+    // Handle JSON parsing/validation errors
+    if (error instanceof JsonFileError) {
+      console.warn('\n⚠️  AIPM: Failed to parse Claude Code marketplace manifest');
+      console.warn(`    File: ${claudePluginManifestPath}`);
+      if (error.cause && typeof error.cause === 'object' && 'issues' in error.cause) {
+        console.warn(`    Error: ${JSON.stringify(error.cause.issues, null, 2)}`);
+      } else if (error.cause) {
+        console.warn(`    Error: ${JSON.stringify(error.cause, null, 2)}`);
+      }
+      console.warn('    This might be due to a corrupted or invalid manifest file.');
+      console.warn('    Please report this at: https://github.com/TrogonStack/aipm/discussions/categories/buggy\n');
+    }
+    return null;
+  }
+}
+
+export async function loadMarketplaceManifest(
+  marketplacePath: string,
+  marketplaceType: MarketplaceType,
+): Promise<MarketplaceManifest | null> {
+  if (marketplaceType === 'claude') {
+    return await loadClaudeCodeMarketplaceManifest(marketplacePath);
+  }
+  return await loadAipmMarketplaceManifest(marketplacePath);
 }
 
 export async function fetchRemoteMarketplaceManifest(url: string): Promise<MarketplaceManifest> {

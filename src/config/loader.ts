@@ -85,8 +85,8 @@ export async function loadPluginsConfig(baseDir: string): Promise<PluginsConfig 
     if (await isClaudeCodeInstalled()) {
       const claudeCodeMarketplaces = await readClaudeCodeMarketplaces();
 
-      for (const marketplace of claudeCodeMarketplaces) {
-        const prefixedName = `claude:${marketplace.name}`;
+      for (const [marketplaceName, marketplaceConfig] of Object.entries(claudeCodeMarketplaces)) {
+        const prefixedName = `claude:${marketplaceName}`;
 
         if (globalMarketplaces[prefixedName] || config.marketplaces[prefixedName] || localMarketplaces[prefixedName]) {
           console.warn(
@@ -95,7 +95,7 @@ export async function loadPluginsConfig(baseDir: string): Promise<PluginsConfig 
           continue;
         }
 
-        claudeMarketplaces[prefixedName] = convertClaudeMarketplaceToAIPM(marketplace);
+        claudeMarketplaces[prefixedName] = convertClaudeMarketplaceToAIPM(marketplaceName, marketplaceConfig);
       }
     }
 

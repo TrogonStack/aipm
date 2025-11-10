@@ -1,37 +1,25 @@
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
-import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
+import { mkdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { init } from '../../src/commands/init';
 import { list } from '../../src/commands/list';
 import { loadPluginsConfig } from '../../src/config/loader';
-import { resetEnvCache } from '../../src/helpers/paths';
+import { setupTestEnvironment } from '../helpers/test-setup';
 
 describe('Claude Code Auto-Discovery Integration', () => {
-  let originalHome: string | undefined;
   let testHome: string;
   let testDir: string;
+  let cleanup: () => Promise<void>;
 
   beforeEach(async () => {
-    originalHome = process.env.HOME;
-
-    testHome = await mkdtemp(join(tmpdir(), 'test-home-'));
-    process.env.HOME = testHome;
-    resetEnvCache();
-
-    testDir = await mkdtemp(join(tmpdir(), 'test-project-'));
+    const setup = await setupTestEnvironment({ initProject: true });
+    testHome = setup.testHome;
+    testDir = setup.testDir!;
+    cleanup = setup.cleanup;
   });
 
   afterEach(async () => {
-    if (originalHome) {
-      process.env.HOME = originalHome;
-    } else {
-      delete process.env.HOME;
-    }
-    resetEnvCache();
-
-    await rm(testHome, { recursive: true, force: true });
-    await rm(testDir, { recursive: true, force: true });
+    await cleanup();
   });
 
   test('automatically discovers Claude Code marketplaces when loading config', async () => {
@@ -39,19 +27,15 @@ describe('Claude Code Auto-Discovery Integration', () => {
     await mkdir(claudeDir, { recursive: true });
 
     const claudeMarketplaces = {
-      marketplaces: [
-        {
-          name: 'anthropic-agent-skills',
-          source: 'directory',
-          path: 'marketplaces/anthropic-agent-skills',
-          enabled: true,
-        },
-        {
-          name: 'claude-code-workflows',
-          source: 'directory',
-          path: 'marketplaces/claude-code-workflows',
-        },
-      ],
+      'anthropic-agent-skills': {
+        source: 'directory',
+        path: 'marketplaces/anthropic-agent-skills',
+        enabled: true,
+      },
+      'claude-code-workflows': {
+        source: 'directory',
+        path: 'marketplaces/claude-code-workflows',
+      },
     };
 
     await writeFile(join(claudeDir, 'known_marketplaces.json'), JSON.stringify(claudeMarketplaces, null, 2));
@@ -70,13 +54,10 @@ describe('Claude Code Auto-Discovery Integration', () => {
     await mkdir(claudeDir, { recursive: true });
 
     const claudeMarketplaces = {
-      marketplaces: [
-        {
-          name: 'test-marketplace',
-          source: 'directory',
-          path: 'marketplaces/test-marketplace',
-        },
-      ],
+      'test-marketplace': {
+        source: 'directory',
+        path: 'marketplaces/test-marketplace',
+      },
     };
 
     await writeFile(join(claudeDir, 'known_marketplaces.json'), JSON.stringify(claudeMarketplaces));
@@ -107,13 +88,10 @@ describe('Claude Code Auto-Discovery Integration', () => {
     );
 
     const claudeMarketplaces = {
-      marketplaces: [
-        {
-          name: 'test-marketplace',
-          source: 'directory',
-          path: marketplaceDir,
-        },
-      ],
+      'test-marketplace': {
+        source: 'directory',
+        path: marketplaceDir,
+      },
     };
 
     await writeFile(join(claudeDir, 'known_marketplaces.json'), JSON.stringify(claudeMarketplaces));
@@ -130,13 +108,10 @@ describe('Claude Code Auto-Discovery Integration', () => {
     await mkdir(claudeDir, { recursive: true });
 
     const claudeMarketplaces = {
-      marketplaces: [
-        {
-          name: 'claude-marketplace',
-          source: 'directory',
-          path: 'marketplaces/claude-marketplace',
-        },
-      ],
+      'claude-marketplace': {
+        source: 'directory',
+        path: 'marketplaces/claude-marketplace',
+      },
     };
 
     await writeFile(join(claudeDir, 'known_marketplaces.json'), JSON.stringify(claudeMarketplaces));
@@ -177,13 +152,10 @@ describe('Claude Code Auto-Discovery Integration', () => {
     await mkdir(claudeDir, { recursive: true });
 
     const claudeMarketplaces = {
-      marketplaces: [
-        {
-          name: 'my-marketplace',
-          source: 'directory',
-          path: 'marketplaces/claude-my-marketplace',
-        },
-      ],
+      'my-marketplace': {
+        source: 'directory',
+        path: 'marketplaces/claude-my-marketplace',
+      },
     };
 
     await writeFile(join(claudeDir, 'known_marketplaces.json'), JSON.stringify(claudeMarketplaces));
@@ -213,14 +185,11 @@ describe('Claude Code Auto-Discovery Integration', () => {
     await mkdir(claudeDir, { recursive: true });
 
     const claudeMarketplaces = {
-      marketplaces: [
-        {
-          name: 'git-marketplace',
-          source: 'git',
-          url: 'https://github.com/org/marketplace.git',
-          branch: 'main',
-        },
-      ],
+      'git-marketplace': {
+        source: 'git',
+        url: 'https://github.com/org/marketplace.git',
+        branch: 'main',
+      },
     };
 
     await writeFile(join(claudeDir, 'known_marketplaces.json'), JSON.stringify(claudeMarketplaces));

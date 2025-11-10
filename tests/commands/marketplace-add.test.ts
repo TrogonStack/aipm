@@ -2,21 +2,23 @@ import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { init } from '../../src/commands/init';
 import { marketplaceAdd } from '../../src/commands/marketplace-add';
 import { loadPluginsConfig } from '../../src/config/loader';
 import { fileExists } from '../../src/helpers/fs';
+import { setupTestEnvironment } from '../helpers/test-setup';
 
 describe('marketplace add', () => {
   let testDir: string;
+  let cleanup: () => Promise<void>;
 
   beforeEach(async () => {
-    testDir = await mkdtemp(join(tmpdir(), 'aipm-add-'));
-    await init({ cwd: testDir });
+    const setup = await setupTestEnvironment({ initProject: true });
+    testDir = setup.testDir!;
+    cleanup = setup.cleanup;
   });
 
   afterEach(async () => {
-    await rm(testDir, { recursive: true, force: true });
+    await cleanup();
   });
 
   describe('basic functionality', () => {

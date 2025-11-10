@@ -23,9 +23,32 @@ const ClaudeMarketplaceEntrySchema = z.object({
   enabled: z.boolean().optional(),
 });
 
-const ClaudeKnownMarketplacesSchema = z.object({
-  marketplaces: z.array(ClaudeMarketplaceEntrySchema),
+/**
+ * Schema for Claude Code's actual marketplace format (object with marketplace names as keys)
+ */
+const ClaudeMarketplaceObjectEntrySchema = z.object({
+  source: z
+    .object({
+      source: z.string(),
+      repo: z.string().optional(),
+      url: z.string().optional(),
+      branch: z.string().optional(),
+    })
+    .or(z.string())
+    .optional(),
+  installLocation: z.string().optional(),
+  lastUpdated: z.string().optional(),
+  path: z.string().optional(),
+  url: z.string().optional(),
+  branch: z.string().optional(),
+  enabled: z.boolean().optional(),
 });
+
+/**
+ * Schema for Claude Code's known_marketplaces.json
+ * Claude Code uses object format: { "marketplace-name": { ... } }
+ */
+const ClaudeKnownMarketplacesSchema = z.record(z.string(), ClaudeMarketplaceObjectEntrySchema);
 
 /**
  * Schema for Claude Code's installed_plugins.json
@@ -53,6 +76,8 @@ const ClaudeCodeConfigSchema = z
   .loose();
 
 export type ClaudeMarketplaceEntry = z.infer<typeof ClaudeMarketplaceEntrySchema>;
+export type ClaudeMarketplaceObjectEntry = z.infer<typeof ClaudeMarketplaceObjectEntrySchema>;
+export type ClaudeKnownMarketplaces = z.infer<typeof ClaudeKnownMarketplacesSchema>;
 export type ClaudeInstalledPlugin = z.infer<typeof ClaudeInstalledPluginSchema>;
 export type ClaudeCodeConfig = z.infer<typeof ClaudeCodeConfigSchema>;
 
@@ -78,14 +103,15 @@ export async function isClaudeCodeInstalled(): Promise<boolean> {
 
 /**
  * Read Claude Code's known_marketplaces.json
+ * Returns Claude Code's format as-is: { "marketplace-name": { ... } }
  */
-export async function readClaudeCodeMarketplaces(): Promise<ClaudeMarketplaceEntry[]> {
+export async function readClaudeCodeMarketplaces(): Promise<ClaudeKnownMarketplaces> {
   try {
     const claudePluginsDir = getClaudeCodePluginsDir();
     const marketplacesPath = join(claudePluginsDir, FILE_CLAUDE_KNOWN_MARKETPLACES);
 
     if (!(await fileExists(marketplacesPath))) {
-      return [];
+      return {};
     }
 
     const file = Bun.file(marketplacesPath);
@@ -95,18 +121,18 @@ export async function readClaudeCodeMarketplaces(): Promise<ClaudeMarketplaceEnt
     if (!result.success) {
       console.warn('\n⚠️  AIPM: Failed to parse Claude Code marketplaces');
       console.warn(`    File: ${marketplacesPath}`);
-      console.warn(`    Error: ${result.error.message}`);
+      console.warn(`    Error: ${JSON.stringify(result.error.issues, null, 2)}`);
       console.warn('    This might be due to a Claude Code format change.');
       console.warn('    Please report this at: https://github.com/TrogonStack/aipm/discussions/categories/buggy\n');
-      return [];
+      return {};
     }
 
-    return result.data.marketplaces;
+    return result.data;
   } catch (error) {
     console.warn('\n⚠️  AIPM: Failed to read Claude Code marketplaces');
     console.warn(`    Error: ${error}`);
     console.warn('    Please report this at: https://github.com/TrogonStack/aipm/discussions/categories/buggy\n');
-    return [];
+    return {};
   }
 }
 
@@ -180,34 +206,141 @@ export async function readClaudeCodeConfig(): Promise<ClaudeCodeConfig | null> {
 
 /**
  * Get the full path to a Claude Code marketplace
+ *
+ * Resolves relative paths relative to Claude Code's plugins directory.
+ * Returns absolute paths as-is (supports both POSIX and Windows paths).
+ * For git/url sources without a path, returns the expected cache location.
+ *
+ * @param marketplaceName - The name of the marketplace
+ * @param marketplaceConfig - The Claude Code marketplace configuration
+ * @returns The resolved absolute path to the marketplace
  */
-export function getClaudeCodeMarketplacePath(marketplace: ClaudeMarketplaceEntry): string {
+export function getClaudeCodeMarketplacePath(
+  marketplaceName: string,
+  marketplaceConfig: ClaudeMarketplaceObjectEntry,
+): string {
   const claudePluginsDir = getClaudeCodePluginsDir();
 
-  if (marketplace.source === 'directory' && marketplace.path) {
+  // Use installLocation or path if available
+  const marketplacePath = marketplaceConfig.installLocation || marketplaceConfig.path;
+  if (marketplacePath) {
     // Check if path is absolute on either Windows or POSIX systems
-    // This allows Claude Code configs to work cross-platform
-    if (path.isAbsolute(marketplace.path) || path.win32.isAbsolute(marketplace.path)) {
-      return marketplace.path;
+    if (path.isAbsolute(marketplacePath) || path.win32.isAbsolute(marketplacePath)) {
+      return marketplacePath;
     }
-    return join(claudePluginsDir, 'marketplaces', marketplace.path);
+    return join(claudePluginsDir, 'marketplaces', marketplacePath);
   }
 
   // For git/url sources, Claude Code caches them in the marketplaces directory
-  // This assumes Claude Code has already cloned/synced the marketplace
-  return join(claudePluginsDir, 'marketplaces', marketplace.name);
+  return join(claudePluginsDir, 'marketplaces', marketplaceName);
+}
+
+/**
+ * Extract source info from Claude Code marketplace config
+ * Validates and normalizes the source type
+ */
+function extractSourceInfo(source: ClaudeMarketplaceObjectEntry['source']): {
+  source: 'directory' | 'git' | 'url';
+  url?: string;
+  branch?: string;
+} {
+  if (!source) {
+    return { source: 'directory' };
+  }
+
+  if (typeof source === 'string') {
+    // Validate source type
+    if (source === 'directory' || source === 'git' || source === 'url') {
+      return { source };
+    }
+    // Default to directory for unknown string values
+    return { source: 'directory' };
+  }
+
+  // Handle nested source object
+  if (source.source === 'github' && source.repo) {
+    return {
+      source: 'git',
+      url: `https://github.com/${source.repo}.git`,
+      branch: source.branch,
+    };
+  }
+
+  if (source.url) {
+    const sourceType = source.url.startsWith('http') ? 'url' : 'git';
+    return {
+      source: sourceType,
+      url: source.url,
+      branch: source.branch,
+    };
+  }
+
+  return { source: 'directory' };
+}
+
+/**
+ * Determine path from Claude Code marketplace config
+ */
+function determinePath(config: ClaudeMarketplaceObjectEntry): string | undefined {
+  return config.installLocation || config.path;
+}
+
+/**
+ * Apply fallback URL/branch from top-level config if not already set
+ * Determines final source type based on available information
+ */
+function applyFallbackUrlBranch(
+  sourceInfo: ReturnType<typeof extractSourceInfo>,
+  config: ClaudeMarketplaceObjectEntry,
+) {
+  const url = sourceInfo.url || config.url;
+  const branch = sourceInfo.branch || config.branch;
+
+  // Determine source type: if we got URL from fallback and source was directory, infer from URL
+  const source =
+    !sourceInfo.url && url && sourceInfo.source === 'directory'
+      ? url.startsWith('http')
+        ? ('url' as const)
+        : ('git' as const)
+      : sourceInfo.source;
+
+  return { source, url, branch };
 }
 
 /**
  * Convert Claude Code marketplace to AIPM marketplace format
+ * Resolves paths relative to Claude Code's plugins directory
  */
-export function convertClaudeMarketplaceToAIPM(marketplace: ClaudeMarketplaceEntry) {
-  const path = getClaudeCodeMarketplacePath(marketplace);
+export function convertClaudeMarketplaceToAIPM(
+  marketplaceName: string,
+  marketplaceConfig: ClaudeMarketplaceObjectEntry,
+) {
+  // If installLocation exists, treat as directory (already cloned)
+  if (marketplaceConfig.installLocation) {
+    return {
+      source: 'directory',
+      path: marketplaceConfig.installLocation,
+    };
+  }
+
+  // Extract source info and apply fallbacks
+  const sourceInfo = extractSourceInfo(marketplaceConfig.source);
+  const path = determinePath(marketplaceConfig);
+  const finalSourceInfo = applyFallbackUrlBranch(sourceInfo, marketplaceConfig);
+
+  // Return AIPM format
+  if (finalSourceInfo.source === 'directory' && path) {
+    // Resolve path relative to Claude Code's plugins directory
+    const resolvedPath = getClaudeCodeMarketplacePath(marketplaceName, marketplaceConfig);
+    return {
+      source: 'directory',
+      path: resolvedPath,
+    };
+  }
 
   return {
-    source: marketplace.source,
-    url: marketplace.url,
-    path: marketplace.source === 'directory' ? path : undefined,
-    branch: marketplace.branch,
+    source: finalSourceInfo.source,
+    url: finalSourceInfo.url,
+    branch: finalSourceInfo.branch,
   };
 }

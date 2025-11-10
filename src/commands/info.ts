@@ -5,7 +5,7 @@ import { loadPluginsConfig } from '../config/loader';
 import { DirectoryNotFoundError, isNodeError, PluginNotFoundError } from '../errors';
 import { resolveMarketplacePath } from '../helpers/git';
 import { defaultIO } from '../helpers/io';
-import { getPluginSourcePath, loadMarketplaceManifest } from '../helpers/marketplace';
+import { getMarketplaceType, getPluginSourcePath, loadMarketplaceManifest } from '../helpers/marketplace';
 import { loadPluginManifest } from '../helpers/plugin';
 
 const InfoOptionsSchema = z.object({
@@ -52,7 +52,7 @@ export async function info(options: unknown): Promise<void> {
       return;
     }
 
-    const marketplaceManifest = await loadMarketplaceManifest(marketplacePath);
+    const marketplaceManifest = await loadMarketplaceManifest(marketplacePath, getMarketplaceType(marketplaceName));
     const pluginPath = getPluginSourcePath(marketplacePath, pluginName, marketplaceManifest);
 
     let pluginStats;

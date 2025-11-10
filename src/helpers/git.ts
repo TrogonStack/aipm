@@ -1,4 +1,5 @@
 import { rm, writeFile } from 'node:fs/promises';
+import * as path from 'node:path';
 import { join } from 'node:path';
 import { DIR_CACHE } from '../constants';
 import type { MarketplaceSource } from '../schema';
@@ -17,8 +18,12 @@ export async function resolveMarketplacePath(
       if (!marketplace.path) {
         return null;
       }
-      const path = join(cwd, marketplace.path);
-      return path;
+      // If path is absolute, use it directly; otherwise join with cwd
+      if (path.isAbsolute(marketplace.path) || path.win32.isAbsolute(marketplace.path)) {
+        return marketplace.path;
+      }
+      const resolvedPath = join(cwd, marketplace.path);
+      return resolvedPath;
     }
 
     case 'git': {

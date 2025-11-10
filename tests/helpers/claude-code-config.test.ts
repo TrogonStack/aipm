@@ -1,6 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
-import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
+import { mkdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import {
   convertClaudeMarketplaceToAIPM,
@@ -11,35 +10,23 @@ import {
   readClaudeCodeInstalledPlugins,
   readClaudeCodeMarketplaces,
 } from '../../src/helpers/claude-code-config';
-import { resetEnvCache } from '../../src/helpers/paths';
+import { setupTestEnvironment, type TestSetup } from './test-setup';
 
 describe('Claude Code Config Reader', () => {
-  let originalHome: string | undefined;
-  let testHome: string;
+  let setup: TestSetup;
 
   beforeEach(async () => {
-    originalHome = process.env.HOME;
-
-    testHome = await mkdtemp(join(tmpdir(), 'test-home-'));
-    process.env.HOME = testHome;
-    resetEnvCache();
+    setup = await setupTestEnvironment();
   });
 
   afterEach(async () => {
-    if (originalHome) {
-      process.env.HOME = originalHome;
-    } else {
-      delete process.env.HOME;
-    }
-    resetEnvCache();
-
-    await rm(testHome, { recursive: true, force: true });
+    await setup.cleanup();
   });
 
   describe('getClaudeCodePluginsDir', () => {
     test('returns correct path', () => {
       const dir = getClaudeCodePluginsDir();
-      expect(dir).toBe(join(testHome, '.claude', 'plugins'));
+      expect(dir).toBe(join(setup.testHome, '.claude', 'plugins'));
     });
   });
 
@@ -50,7 +37,7 @@ describe('Claude Code Config Reader', () => {
     });
 
     test('returns true when .claude/plugins exists', async () => {
-      await mkdir(join(testHome, '.claude', 'plugins'), { recursive: true });
+      await mkdir(join(setup.testHome, '.claude', 'plugins'), { recursive: true });
 
       const installed = await isClaudeCodeInstalled();
       expect(installed).toBe(true);
@@ -58,91 +45,127 @@ describe('Claude Code Config Reader', () => {
   });
 
   describe('readClaudeCodeMarketplaces', () => {
-    test('returns empty array when file does not exist', async () => {
+    test('returns empty object when file does not exist', async () => {
       const marketplaces = await readClaudeCodeMarketplaces();
-      expect(marketplaces).toEqual([]);
+      expect(marketplaces).toEqual({});
     });
 
-    test('returns empty array when file is invalid JSON', async () => {
-      const claudeDir = join(testHome, '.claude', 'plugins');
+    test('returns empty object when file is invalid JSON', async () => {
+      const claudeDir = join(setup.testHome, '.claude', 'plugins');
       await mkdir(claudeDir, { recursive: true });
       await writeFile(join(claudeDir, 'known_marketplaces.json'), 'invalid json');
 
       const marketplaces = await readClaudeCodeMarketplaces();
-      expect(marketplaces).toEqual([]);
+      expect(marketplaces).toEqual({});
     });
 
-    test('returns empty array when schema validation fails', async () => {
-      const claudeDir = join(testHome, '.claude', 'plugins');
+    test('returns empty object when schema validation fails', async () => {
+      const claudeDir = join(setup.testHome, '.claude', 'plugins');
       await mkdir(claudeDir, { recursive: true });
 
+      // Invalid structure - not an object with marketplace entries
       const invalidConfig = {
-        marketplaces: [
-          {
-            name: 'test',
-            source: 'invalid-source',
-          },
-        ],
+        invalid: 'not a valid marketplace entry',
       };
 
       await writeFile(join(claudeDir, 'known_marketplaces.json'), JSON.stringify(invalidConfig));
 
       const marketplaces = await readClaudeCodeMarketplaces();
-      expect(marketplaces).toEqual([]);
+      expect(marketplaces).toEqual({});
     });
 
     test('parses known_marketplaces.json correctly', async () => {
-      const claudeDir = join(testHome, '.claude', 'plugins');
+      const claudeDir = join(setup.testHome, '.claude', 'plugins');
       await mkdir(claudeDir, { recursive: true });
 
       const config = {
-        marketplaces: [
-          {
-            name: 'anthropic-agent-skills',
-            source: 'directory',
-            path: 'marketplaces/anthropic-agent-skills',
-            enabled: true,
-          },
-          {
-            name: 'my-git-marketplace',
-            source: 'git',
-            url: 'https://github.com/user/marketplace.git',
-            branch: 'main',
-          },
-        ],
+        'anthropic-agent-skills': {
+          source: 'directory',
+          path: 'marketplaces/anthropic-agent-skills',
+          enabled: true,
+        },
+        'my-git-marketplace': {
+          source: 'git',
+          url: 'https://github.com/user/marketplace.git',
+          branch: 'main',
+        },
       };
 
       await writeFile(join(claudeDir, 'known_marketplaces.json'), JSON.stringify(config));
 
       const marketplaces = await readClaudeCodeMarketplaces();
-      expect(marketplaces).toHaveLength(2);
-      expect(marketplaces[0]?.name).toBe('anthropic-agent-skills');
-      expect(marketplaces[0]?.source).toBe('directory');
-      expect(marketplaces[1]?.name).toBe('my-git-marketplace');
-      expect(marketplaces[1]?.source).toBe('git');
+      expect(Object.keys(marketplaces)).toHaveLength(2);
+      expect(marketplaces['anthropic-agent-skills']).toBeDefined();
+      expect(marketplaces['anthropic-agent-skills']?.source).toBe('directory');
+      expect(marketplaces['my-git-marketplace']).toBeDefined();
+      expect(marketplaces['my-git-marketplace']?.source).toBe('git');
     });
 
     test('parses url source marketplace correctly', async () => {
-      const claudeDir = join(testHome, '.claude', 'plugins');
+      const claudeDir = join(setup.testHome, '.claude', 'plugins');
       await mkdir(claudeDir, { recursive: true });
 
       const config = {
-        marketplaces: [
-          {
-            name: 'remote-marketplace',
-            source: 'url',
-            url: 'https://example.com/marketplace.json',
-          },
-        ],
+        'remote-marketplace': {
+          source: 'url',
+          url: 'https://example.com/marketplace.json',
+        },
       };
 
       await writeFile(join(claudeDir, 'known_marketplaces.json'), JSON.stringify(config));
 
       const marketplaces = await readClaudeCodeMarketplaces();
-      expect(marketplaces).toHaveLength(1);
-      expect(marketplaces[0]?.name).toBe('remote-marketplace');
-      expect(marketplaces[0]?.source).toBe('url');
-      expect(marketplaces[0]?.url).toBe('https://example.com/marketplace.json');
+      expect(Object.keys(marketplaces)).toHaveLength(1);
+      expect(marketplaces['remote-marketplace']).toBeDefined();
+      expect(marketplaces['remote-marketplace']?.source).toBe('url');
+      expect(marketplaces['remote-marketplace']?.url).toBe('https://example.com/marketplace.json');
+    });
+
+    test('parses object format with github source correctly', async () => {
+      const claudeDir = join(setup.testHome, '.claude', 'plugins');
+      await mkdir(claudeDir, { recursive: true });
+
+      const config = {
+        'anthropic-agent-skills': {
+          source: {
+            source: 'github',
+            repo: 'anthropics/skills',
+          },
+          installLocation: '/Users/test/.claude/plugins/marketplaces/anthropic-agent-skills',
+          lastUpdated: '2025-11-09T23:35:54.478Z',
+        },
+      };
+
+      await writeFile(join(claudeDir, 'known_marketplaces.json'), JSON.stringify(config));
+
+      const marketplaces = await readClaudeCodeMarketplaces();
+      expect(Object.keys(marketplaces)).toHaveLength(1);
+      expect(marketplaces['anthropic-agent-skills']).toBeDefined();
+      expect(marketplaces['anthropic-agent-skills']?.installLocation).toBe(
+        '/Users/test/.claude/plugins/marketplaces/anthropic-agent-skills',
+      );
+    });
+
+    test('parses object format with directory source correctly', async () => {
+      const claudeDir = join(setup.testHome, '.claude', 'plugins');
+      await mkdir(claudeDir, { recursive: true });
+
+      const config = {
+        'local-marketplace': {
+          source: 'directory',
+          path: '/path/to/marketplace',
+          enabled: true,
+        },
+      };
+
+      await writeFile(join(claudeDir, 'known_marketplaces.json'), JSON.stringify(config));
+
+      const marketplaces = await readClaudeCodeMarketplaces();
+      expect(Object.keys(marketplaces)).toHaveLength(1);
+      expect(marketplaces['local-marketplace']).toBeDefined();
+      expect(marketplaces['local-marketplace']?.source).toBe('directory');
+      expect(marketplaces['local-marketplace']?.path).toBe('/path/to/marketplace');
+      expect(marketplaces['local-marketplace']?.enabled).toBe(true);
     });
   });
 
@@ -153,7 +176,7 @@ describe('Claude Code Config Reader', () => {
     });
 
     test('parses installed_plugins.json correctly', async () => {
-      const claudeDir = join(testHome, '.claude', 'plugins');
+      const claudeDir = join(setup.testHome, '.claude', 'plugins');
       await mkdir(claudeDir, { recursive: true });
 
       const config = {
@@ -189,7 +212,7 @@ describe('Claude Code Config Reader', () => {
     });
 
     test('parses config.json correctly', async () => {
-      const claudeDir = join(testHome, '.claude', 'plugins');
+      const claudeDir = join(setup.testHome, '.claude', 'plugins');
       await mkdir(claudeDir, { recursive: true });
 
       const configData = {
@@ -209,117 +232,119 @@ describe('Claude Code Config Reader', () => {
 
   describe('getClaudeCodeMarketplacePath', () => {
     test('returns full path for directory marketplace with relative path', () => {
-      const marketplace = {
-        name: 'anthropic-agent-skills',
+      const marketplaceName = 'anthropic-agent-skills';
+      const marketplaceConfig = {
         source: 'directory' as const,
         path: 'marketplaces/anthropic-agent-skills',
       };
 
-      const path = getClaudeCodeMarketplacePath(marketplace);
-      expect(path).toBe(join(testHome, '.claude', 'plugins', 'marketplaces', 'marketplaces/anthropic-agent-skills'));
+      const path = getClaudeCodeMarketplacePath(marketplaceName, marketplaceConfig);
+      expect(path).toBe(
+        join(setup.testHome, '.claude', 'plugins', 'marketplaces', 'marketplaces/anthropic-agent-skills'),
+      );
     });
 
     test('returns absolute path for directory marketplace with absolute path', () => {
-      const marketplace = {
-        name: 'my-marketplace',
+      const marketplaceName = 'my-marketplace';
+      const marketplaceConfig = {
         source: 'directory' as const,
         path: '/absolute/path/to/marketplace',
       };
 
-      const path = getClaudeCodeMarketplacePath(marketplace);
+      const path = getClaudeCodeMarketplacePath(marketplaceName, marketplaceConfig);
       expect(path).toBe('/absolute/path/to/marketplace');
     });
 
     test('returns absolute path for Windows-style absolute path', () => {
-      const marketplace = {
-        name: 'windows-marketplace',
+      const marketplaceName = 'windows-marketplace';
+      const marketplaceConfig = {
         source: 'directory' as const,
         path: 'C:\\Users\\test\\marketplace',
       };
 
-      const path = getClaudeCodeMarketplacePath(marketplace);
+      const path = getClaudeCodeMarketplacePath(marketplaceName, marketplaceConfig);
       expect(path).toBe('C:\\Users\\test\\marketplace');
     });
 
     test('returns absolute path for D: drive Windows path', () => {
-      const marketplace = {
-        name: 'windows-d-drive',
+      const marketplaceName = 'windows-d-drive';
+      const marketplaceConfig = {
         source: 'directory' as const,
         path: 'D:\\Projects\\marketplace',
       };
 
-      const path = getClaudeCodeMarketplacePath(marketplace);
+      const path = getClaudeCodeMarketplacePath(marketplaceName, marketplaceConfig);
       expect(path).toBe('D:\\Projects\\marketplace');
     });
 
     test('returns absolute path for Windows forward-slash style path', () => {
-      const marketplace = {
-        name: 'windows-forward-slash',
+      const marketplaceName = 'windows-forward-slash';
+      const marketplaceConfig = {
         source: 'directory' as const,
         path: 'C:/Users/test/marketplace',
       };
 
-      const path = getClaudeCodeMarketplacePath(marketplace);
+      const path = getClaudeCodeMarketplacePath(marketplaceName, marketplaceConfig);
       expect(path).toBe('C:/Users/test/marketplace');
     });
 
     test('returns absolute path for UNC network path', () => {
-      const marketplace = {
-        name: 'unc-path',
+      const marketplaceName = 'unc-path';
+      const marketplaceConfig = {
         source: 'directory' as const,
         path: '\\\\server\\share\\marketplace',
       };
 
-      const path = getClaudeCodeMarketplacePath(marketplace);
+      const path = getClaudeCodeMarketplacePath(marketplaceName, marketplaceConfig);
       expect(path).toBe('\\\\server\\share\\marketplace');
     });
 
     test('returns cached path for git marketplace', () => {
-      const marketplace = {
-        name: 'git-marketplace',
+      const marketplaceName = 'git-marketplace';
+      const marketplaceConfig = {
         source: 'git' as const,
         url: 'https://github.com/user/marketplace.git',
       };
 
-      const path = getClaudeCodeMarketplacePath(marketplace);
-      expect(path).toBe(join(testHome, '.claude', 'plugins', 'marketplaces', 'git-marketplace'));
+      const path = getClaudeCodeMarketplacePath(marketplaceName, marketplaceConfig);
+      expect(path).toBe(join(setup.testHome, '.claude', 'plugins', 'marketplaces', 'git-marketplace'));
     });
 
     test('returns cached path for url marketplace', () => {
-      const marketplace = {
-        name: 'url-marketplace',
+      const marketplaceName = 'url-marketplace';
+      const marketplaceConfig = {
         source: 'url' as const,
         url: 'https://example.com/marketplace.json',
       };
 
-      const path = getClaudeCodeMarketplacePath(marketplace);
-      expect(path).toBe(join(testHome, '.claude', 'plugins', 'marketplaces', 'url-marketplace'));
+      const path = getClaudeCodeMarketplacePath(marketplaceName, marketplaceConfig);
+      expect(path).toBe(join(setup.testHome, '.claude', 'plugins', 'marketplaces', 'url-marketplace'));
     });
   });
 
   describe('convertClaudeMarketplaceToAIPM', () => {
     test('converts directory marketplace correctly', () => {
-      const claudeMarketplace = {
-        name: 'test-marketplace',
+      const marketplaceName = 'test-marketplace';
+      const marketplaceConfig = {
         source: 'directory' as const,
         path: 'marketplaces/test-marketplace',
       };
 
-      const aipmMarketplace = convertClaudeMarketplaceToAIPM(claudeMarketplace);
+      const aipmMarketplace = convertClaudeMarketplaceToAIPM(marketplaceName, marketplaceConfig);
 
       expect(aipmMarketplace.source).toBe('directory');
       expect(aipmMarketplace.path).toContain('test-marketplace');
     });
 
     test('converts git marketplace correctly', () => {
-      const claudeMarketplace = {
-        name: 'git-marketplace',
+      const marketplaceName = 'git-marketplace';
+      const marketplaceConfig = {
         source: 'git' as const,
         url: 'https://github.com/user/marketplace.git',
         branch: 'main',
       };
 
-      const aipmMarketplace = convertClaudeMarketplaceToAIPM(claudeMarketplace);
+      const aipmMarketplace = convertClaudeMarketplaceToAIPM(marketplaceName, marketplaceConfig);
 
       expect(aipmMarketplace.source).toBe('git');
       expect(aipmMarketplace.url).toBe('https://github.com/user/marketplace.git');
