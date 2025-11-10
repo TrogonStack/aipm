@@ -23,12 +23,7 @@ export async function marketplaceUpdate(options: unknown): Promise<void> {
       throw error;
     }
 
-    const config = await loadPluginsConfig(cwd);
-    if (!config) {
-      const error = new Error('Failed to load config');
-      defaultIO.logError(error.message);
-      throw error;
-    }
+    const { config } = await loadPluginsConfig(cwd);
 
     const marketplace = config.marketplaces[cmd.name];
 

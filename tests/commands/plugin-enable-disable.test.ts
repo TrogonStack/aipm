@@ -36,8 +36,8 @@ describe('plugin enable/disable', () => {
         cwd: testDir,
       });
 
-      const updatedConfig = await loadPluginsConfig(testDir);
-      expect(updatedConfig?.plugins['test-plugin@marketplace']?.enabled).toBe(true);
+      const { config: updatedConfig } = await loadPluginsConfig(testDir);
+      expect(updatedConfig.plugins['test-plugin@marketplace']?.enabled).toBe(true);
     });
 
     test("adds and enables a new plugin if it doesn't exist", async () => {
@@ -46,8 +46,8 @@ describe('plugin enable/disable', () => {
         cwd: testDir,
       });
 
-      const config = await loadPluginsConfig(testDir);
-      expect(config?.plugins['new-plugin@marketplace']).toBeDefined();
+      const { config } = await loadPluginsConfig(testDir);
+      expect(config.plugins['new-plugin@marketplace']).toBeDefined();
       expect(config?.plugins['new-plugin@marketplace']?.enabled).toBe(true);
     });
 
@@ -66,8 +66,8 @@ describe('plugin enable/disable', () => {
         cwd: testDir,
       });
 
-      const updatedConfig = await loadPluginsConfig(testDir);
-      expect(updatedConfig?.plugins['enabled-plugin@marketplace']?.enabled).toBe(true);
+      const { config: updatedConfig } = await loadPluginsConfig(testDir);
+      expect(updatedConfig.plugins['enabled-plugin@marketplace']?.enabled).toBe(true);
     });
 
     test('enables plugin in plugins.local.json', async () => {
@@ -87,8 +87,8 @@ describe('plugin enable/disable', () => {
         local: true,
       });
 
-      const config = await loadPluginsConfig(testDir);
-      expect(config?.plugins['local-plugin@marketplace']?.enabled).toBe(true);
+      const { config } = await loadPluginsConfig(testDir);
+      expect(config.plugins['local-plugin@marketplace']?.enabled).toBe(true);
     });
 
     test('preserves other plugin properties when enabling', async () => {
@@ -108,8 +108,8 @@ describe('plugin enable/disable', () => {
         cwd: testDir,
       });
 
-      const updatedConfig = await loadPluginsConfig(testDir);
-      expect(updatedConfig?.plugins['test-plugin@marketplace']).toEqual({
+      const { config: updatedConfig } = await loadPluginsConfig(testDir);
+      expect(updatedConfig.plugins['test-plugin@marketplace']).toEqual({
         enabled: true,
         version: '1.0.0',
         scope: 'project',
@@ -132,8 +132,8 @@ describe('plugin enable/disable', () => {
         dryRun: true,
       });
 
-      const updatedConfig = await loadPluginsConfig(testDir);
-      expect(updatedConfig?.plugins['test-plugin@marketplace']?.enabled).toBe(false);
+      const { config: updatedConfig } = await loadPluginsConfig(testDir);
+      expect(updatedConfig.plugins['test-plugin@marketplace']?.enabled).toBe(false);
     });
 
     test('dry-run does not add new plugin', async () => {
@@ -143,8 +143,8 @@ describe('plugin enable/disable', () => {
         dryRun: true,
       });
 
-      const updatedConfig = await loadPluginsConfig(testDir);
-      expect(updatedConfig?.plugins['new-plugin@marketplace']).toBeUndefined();
+      const { config: updatedConfig } = await loadPluginsConfig(testDir);
+      expect(updatedConfig.plugins['new-plugin@marketplace']).toBeUndefined();
     });
   });
 
@@ -164,8 +164,8 @@ describe('plugin enable/disable', () => {
         cwd: testDir,
       });
 
-      const updatedConfig = await loadPluginsConfig(testDir);
-      expect(updatedConfig?.plugins['test-plugin@marketplace']?.enabled).toBe(false);
+      const { config: updatedConfig } = await loadPluginsConfig(testDir);
+      expect(updatedConfig.plugins['test-plugin@marketplace']?.enabled).toBe(false);
     });
 
     test('handles non-existent plugin', async () => {
@@ -174,8 +174,8 @@ describe('plugin enable/disable', () => {
         cwd: testDir,
       });
 
-      const config = await loadPluginsConfig(testDir);
-      expect(config?.plugins['non-existent@marketplace']).toBeUndefined();
+      const { config } = await loadPluginsConfig(testDir);
+      expect(config.plugins['non-existent@marketplace']).toBeUndefined();
     });
 
     test('handles already disabled plugin', async () => {
@@ -193,8 +193,8 @@ describe('plugin enable/disable', () => {
         cwd: testDir,
       });
 
-      const updatedConfig = await loadPluginsConfig(testDir);
-      expect(updatedConfig?.plugins['disabled-plugin@marketplace']?.enabled).toBe(false);
+      const { config: updatedConfig } = await loadPluginsConfig(testDir);
+      expect(updatedConfig.plugins['disabled-plugin@marketplace']?.enabled).toBe(false);
     });
 
     test('disables plugin in plugins.local.json', async () => {
@@ -214,8 +214,8 @@ describe('plugin enable/disable', () => {
         local: true,
       });
 
-      const config = await loadPluginsConfig(testDir);
-      expect(config?.plugins['local-plugin@marketplace']?.enabled).toBe(false);
+      const { config } = await loadPluginsConfig(testDir);
+      expect(config.plugins['local-plugin@marketplace']?.enabled).toBe(false);
     });
 
     test('preserves other plugin properties when disabling', async () => {
@@ -235,8 +235,8 @@ describe('plugin enable/disable', () => {
         cwd: testDir,
       });
 
-      const updatedConfig = await loadPluginsConfig(testDir);
-      expect(updatedConfig?.plugins['test-plugin@marketplace']).toEqual({
+      const { config: updatedConfig } = await loadPluginsConfig(testDir);
+      expect(updatedConfig.plugins['test-plugin@marketplace']).toEqual({
         enabled: false,
         version: '2.0.0',
         scope: 'global',
@@ -259,8 +259,8 @@ describe('plugin enable/disable', () => {
         dryRun: true,
       });
 
-      const updatedConfig = await loadPluginsConfig(testDir);
-      expect(updatedConfig?.plugins['test-plugin@marketplace']?.enabled).toBe(true);
+      const { config: updatedConfig } = await loadPluginsConfig(testDir);
+      expect(updatedConfig.plugins['test-plugin@marketplace']?.enabled).toBe(true);
     });
   });
 
@@ -300,16 +300,16 @@ describe('plugin enable/disable', () => {
         cwd: testDir,
       });
 
-      let config = await loadPluginsConfig(testDir);
-      expect(config?.plugins['toggle-plugin@marketplace']?.enabled).toBe(true);
+      let { config } = await loadPluginsConfig(testDir);
+      expect(config.plugins['toggle-plugin@marketplace']?.enabled).toBe(true);
 
       await pluginDisable({
         pluginId: 'toggle-plugin@marketplace',
         cwd: testDir,
       });
 
-      config = await loadPluginsConfig(testDir);
-      expect(config?.plugins['toggle-plugin@marketplace']?.enabled).toBe(false);
+      ({ config } = await loadPluginsConfig(testDir));
+      expect(config.plugins['toggle-plugin@marketplace']?.enabled).toBe(false);
     });
   });
 });

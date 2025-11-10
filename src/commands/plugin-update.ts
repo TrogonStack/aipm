@@ -33,12 +33,7 @@ export async function pluginUpdate(options: unknown): Promise<void> {
       throw error;
     }
 
-    const config = await loadPluginsConfig(cwd);
-    if (!config) {
-      const error = new Error('Failed to load config');
-      defaultIO.logError(error.message);
-      throw error;
-    }
+    const { config } = await loadPluginsConfig(cwd);
 
     if (!config.plugins[cmd.pluginId]) {
       const error = new Error(`Plugin '${cmd.pluginId}' is not installed`);

@@ -2,7 +2,7 @@ import { readdir, stat } from 'node:fs/promises';
 import { join } from 'node:path';
 import { z } from 'zod';
 import { loadPluginsConfig } from '../config/loader';
-import { DirectoryNotFoundError, isNodeError, PluginNotFoundError } from '../errors';
+import { DirectoryNotFoundError, isFileNotFoundError, PluginNotFoundError } from '../errors';
 import { resolveMarketplacePath } from '../helpers/git';
 import { defaultIO } from '../helpers/io';
 import { getMarketplaceType, getPluginSourcePath, loadMarketplaceManifest } from '../helpers/marketplace';
@@ -19,9 +19,9 @@ export async function info(options: unknown): Promise<void> {
   const cwd = cmd.cwd || process.cwd();
 
   try {
-    const config = await loadPluginsConfig(cwd);
+    const { config, sources } = await loadPluginsConfig(cwd);
 
-    if (!config) {
+    if (!sources.project) {
       defaultIO.logError("No plugins.json found. Run 'aipm init' first.");
       return;
     }
@@ -59,7 +59,7 @@ export async function info(options: unknown): Promise<void> {
     try {
       pluginStats = await stat(pluginPath);
     } catch (error: unknown) {
-      if (isNodeError(error) && error.code === 'ENOENT') {
+      if (isFileNotFoundError(error)) {
         throw new PluginNotFoundError(pluginName, marketplaceName, { cause: error });
       }
       throw error;
@@ -126,7 +126,7 @@ export async function info(options: unknown): Promise<void> {
         }
       }
     } catch (error: unknown) {
-      if (isNodeError(error) && error.code === 'ENOENT') {
+      if (isFileNotFoundError(error)) {
         // No commands directory - that's ok
       } else {
         throw new DirectoryNotFoundError(commandsPath, { cause: error });

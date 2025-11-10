@@ -22,11 +22,11 @@ describe('Zod validation', () => {
     test('validates correct plugins.json structure', async () => {
       await init({ cwd: testDir });
 
-      const config = await loadPluginsConfig(testDir);
+      const { config } = await loadPluginsConfig(testDir);
 
       expect(config).not.toBeNull();
-      expect(config?.marketplaces).toBeDefined();
-      expect(config?.plugins).toBeDefined();
+      expect(config.marketplaces).toBeDefined();
+      expect(config.plugins).toBeDefined();
     });
 
     test('rejects invalid marketplace source', async () => {
@@ -68,17 +68,17 @@ describe('Zod validation', () => {
     test('validates example config structure', async () => {
       await init({ cwd: testDir, example: true });
 
-      const config = await loadPluginsConfig(testDir);
+      const { config } = await loadPluginsConfig(testDir);
 
       expect(config).not.toBeNull();
 
       // Validate all marketplace sources
-      for (const [_name, marketplace] of Object.entries(config?.marketplaces ?? {})) {
+      for (const [_name, marketplace] of Object.entries(config.marketplaces ?? {})) {
         expect(marketplace.source).toMatch(/^(git|directory|url)$/);
       }
 
       // Validate all plugin configs
-      for (const [_id, plugin] of Object.entries(config?.plugins ?? {})) {
+      for (const [_id, plugin] of Object.entries(config.plugins ?? {})) {
         expect(typeof plugin.enabled).toBe('boolean');
         if (plugin.scope) {
           expect(plugin.scope).toMatch(/^(global|project)$/);
@@ -86,15 +86,14 @@ describe('Zod validation', () => {
       }
     });
 
-    test('returns null for malformed JSON', async () => {
+    test('throws error for malformed JSON', async () => {
       await init({ cwd: testDir });
 
       const configPath = join(testDir, '.cursor', 'plugins.json');
       await Bun.write(configPath, '{invalid json}');
 
-      // loadPluginsConfig catches JSON parse errors and returns null
-      const result = await loadPluginsConfig(testDir);
-      expect(result).toBeNull();
+      // loadPluginsConfig throws error for malformed JSON
+      await expect(loadPluginsConfig(testDir)).rejects.toThrow();
     });
 
     test('validates merged config from plugins.json and plugins.local.json', async () => {
@@ -112,11 +111,11 @@ describe('Zod validation', () => {
 
       await writeJsonFile(localConfigPath, localConfig);
 
-      const merged = await loadPluginsConfig(testDir);
+      const { config: merged } = await loadPluginsConfig(testDir);
 
       expect(merged).not.toBeNull();
-      expect(merged?.plugins['local-plugin@custom']).toBeDefined();
-      expect(merged?.plugins['local-plugin@custom']?.enabled).toBe(true);
+      expect(merged.plugins['local-plugin@custom']).toBeDefined();
+      expect(merged.plugins['local-plugin@custom']?.enabled).toBe(true);
     });
 
     test('rejects invalid plugins.local.json', async () => {

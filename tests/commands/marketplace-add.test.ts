@@ -29,11 +29,11 @@ describe('marketplace add', () => {
         cwd: testDir,
       });
 
-      const config = await loadPluginsConfig(testDir);
+      const { config } = await loadPluginsConfig(testDir);
       expect(config).not.toBeNull();
-      expect(config?.marketplaces['local-plugins']).toBeDefined();
-      expect(config?.marketplaces['local-plugins']?.source).toBe('directory');
-      expect(config?.marketplaces['local-plugins']?.path).toBe('./my-plugins');
+      expect(config.marketplaces['local-plugins']).toBeDefined();
+      expect(config.marketplaces['local-plugins']?.source).toBe('directory');
+      expect(config.marketplaces['local-plugins']?.path).toBe('./my-plugins');
     });
 
     test('adds marketplace to plugins.local.json', async () => {
@@ -44,11 +44,11 @@ describe('marketplace add', () => {
         local: true,
       });
 
-      const config = await loadPluginsConfig(testDir);
+      const { config } = await loadPluginsConfig(testDir);
       expect(config).not.toBeNull();
-      expect(config?.marketplaces['dev-plugins']).toBeDefined();
-      expect(config?.marketplaces['dev-plugins']?.source).toBe('directory');
-      expect(config?.marketplaces['dev-plugins']?.path).toBe('../dev-plugins');
+      expect(config.marketplaces['dev-plugins']).toBeDefined();
+      expect(config.marketplaces['dev-plugins']?.source).toBe('directory');
+      expect(config.marketplaces['dev-plugins']?.path).toBe('../dev-plugins');
     });
 
     test('supports absolute paths', async () => {
@@ -60,8 +60,8 @@ describe('marketplace add', () => {
         cwd: testDir,
       });
 
-      const config = await loadPluginsConfig(testDir);
-      expect(config?.marketplaces['abs-plugins']?.path).toBe(absolutePath);
+      const { config } = await loadPluginsConfig(testDir);
+      expect(config.marketplaces['abs-plugins']?.path).toBe(absolutePath);
     });
   });
 
@@ -95,8 +95,8 @@ describe('marketplace add', () => {
         cwd: testDir,
       });
 
-      const config = await loadPluginsConfig(testDir);
-      expect(config?.marketplaces['my-plugins']?.path).toBe('./plugins1');
+      const { config } = await loadPluginsConfig(testDir);
+      expect(config.marketplaces['my-plugins']?.path).toBe('./plugins1');
     });
 
     test('validates name is not empty', async () => {
@@ -128,7 +128,7 @@ describe('marketplace add', () => {
 
   describe('dry-run mode', () => {
     test('dry-run does not modify config', async () => {
-      const configBefore = await loadPluginsConfig(testDir);
+      const { config: configBefore } = await loadPluginsConfig(testDir);
 
       await marketplaceAdd({
         name: 'test-plugins',
@@ -137,9 +137,9 @@ describe('marketplace add', () => {
         dryRun: true,
       });
 
-      const configAfter = await loadPluginsConfig(testDir);
+      const { config: configAfter } = await loadPluginsConfig(testDir);
       expect(configAfter).toEqual(configBefore);
-      expect(configAfter?.marketplaces['test-plugins']).toBeUndefined();
+      expect(configAfter.marketplaces['test-plugins']).toBeUndefined();
     });
 
     test('dry-run with local flag does not create local config', async () => {
@@ -171,10 +171,10 @@ describe('marketplace add', () => {
         cwd: testDir,
       });
 
-      const config = await loadPluginsConfig(testDir);
-      expect(Object.keys(config?.marketplaces ?? {})).toHaveLength(2);
-      expect(config?.marketplaces.first).toBeDefined();
-      expect(config?.marketplaces.second).toBeDefined();
+      const { config } = await loadPluginsConfig(testDir);
+      expect(Object.keys(config.marketplaces ?? {})).toHaveLength(2);
+      expect(config.marketplaces.first).toBeDefined();
+      expect(config.marketplaces.second).toBeDefined();
     });
 
     test('preserves existing plugins when adding marketplace', async () => {
@@ -193,9 +193,9 @@ describe('marketplace add', () => {
         cwd: testDir,
       });
 
-      const config = await loadPluginsConfig(testDir);
-      expect(config?.plugins['test-plugin@marketplace']).toBeDefined();
-      expect(config?.marketplaces['new-marketplace']).toBeDefined();
+      const { config } = await loadPluginsConfig(testDir);
+      expect(config.plugins['test-plugin@marketplace']).toBeDefined();
+      expect(config.marketplaces['new-marketplace']).toBeDefined();
     });
   });
 });

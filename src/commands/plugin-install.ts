@@ -39,12 +39,7 @@ export async function pluginInstall(options: unknown): Promise<void> {
       throw error;
     }
 
-    const config = await loadPluginsConfig(cwd);
-    if (!config) {
-      const error = new Error('Failed to load config');
-      defaultIO.logError(error.message);
-      throw error;
-    }
+    const { config } = await loadPluginsConfig(cwd);
 
     const [pluginName, marketplaceName] = cmd.pluginId.split('@');
 

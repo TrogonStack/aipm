@@ -26,11 +26,7 @@ export async function marketplaceRemove(options: unknown): Promise<void> {
       return;
     }
 
-    const config = await loadPluginsConfig(cwd);
-    if (!config) {
-      defaultIO.logError('Failed to load config');
-      return;
-    }
+    const { config } = await loadPluginsConfig(cwd);
 
     if (!config.marketplaces[cmd.name]) {
       defaultIO.logError(`Marketplace '${cmd.name}' not found`);

@@ -53,9 +53,9 @@ describe('loadPluginsConfig', () => {
         },
       });
 
-      const result = await loadPluginsConfig(setup.testHome);
+      const { config } = await loadPluginsConfig(setup.testHome);
 
-      expect(result).toEqual({
+      expect(config).toEqual({
         marketplaces: {
           'project-marketplace': {
             source: 'directory',
@@ -100,9 +100,9 @@ describe('loadPluginsConfig', () => {
         },
       });
 
-      const result = await loadPluginsConfig(setup.testHome);
+      const { config } = await loadPluginsConfig(setup.testHome);
 
-      expect(result).toEqual({
+      expect(config).toEqual({
         marketplaces: {
           'global-marketplace': {
             source: 'directory',
@@ -155,11 +155,11 @@ describe('loadPluginsConfig', () => {
         },
       });
 
-      const result = await loadPluginsConfig(setup.testHome);
+      const { config } = await loadPluginsConfig(setup.testHome);
 
-      expect(result?.marketplaces.shared?.path).toBe('/project/path');
-      expect(result?.plugins['plugin@shared']?.enabled).toBe(true);
-      expect(result?.plugins['plugin@shared']?.version).toBeUndefined();
+      expect(config.marketplaces.shared?.path).toBe('/project/path');
+      expect(config.plugins['plugin@shared']?.enabled).toBe(true);
+      expect(config.plugins['plugin@shared']?.version).toBeUndefined();
     });
 
     test('local config has highest priority', async () => {
@@ -207,11 +207,11 @@ describe('loadPluginsConfig', () => {
         },
       });
 
-      const result = await loadPluginsConfig(setup.testHome);
+      const { config } = await loadPluginsConfig(setup.testHome);
 
-      expect(result?.marketplaces.shared?.path).toBe('/local/path');
-      expect(result?.plugins['plugin@shared']?.enabled).toBe(false);
-      expect(result?.plugins['plugin@shared']?.scope).toBeUndefined();
+      expect(config.marketplaces.shared?.path).toBe('/local/path');
+      expect(config.plugins['plugin@shared']?.enabled).toBe(false);
+      expect(config.plugins['plugin@shared']?.scope).toBeUndefined();
     });
 
     test('merges all three configs with correct priority', async () => {
@@ -257,15 +257,15 @@ describe('loadPluginsConfig', () => {
         },
       });
 
-      const result = await loadPluginsConfig(setup.testHome);
+      const { config } = await loadPluginsConfig(setup.testHome);
 
-      expect(result?.marketplaces).toEqual({
+      expect(config.marketplaces).toEqual({
         'global-only': { source: 'directory', path: '/global/path' },
         'project-only': { source: 'directory', path: '/project/path' },
         'local-only': { source: 'directory', path: '/local/path' },
       });
 
-      expect(result?.plugins).toEqual({
+      expect(config.plugins).toEqual({
         'global-plugin@global-only': { enabled: true },
         'project-plugin@project-only': { enabled: true },
         'local-plugin@local-only': { enabled: true },
@@ -280,9 +280,9 @@ describe('loadPluginsConfig', () => {
         plugins: {},
       });
 
-      const result = await loadPluginsConfig(setup.testHome);
+      const { config } = await loadPluginsConfig(setup.testHome);
 
-      expect(result).toEqual({
+      expect(config).toEqual({
         marketplaces: {},
         plugins: {},
       });
@@ -304,9 +304,9 @@ describe('loadPluginsConfig', () => {
         plugins: {},
       });
 
-      const result = await loadPluginsConfig(setup.testHome);
+      const { config } = await loadPluginsConfig(setup.testHome);
 
-      expect(result).toEqual({
+      expect(config).toEqual({
         marketplaces: {
           'project-marketplace': {
             source: 'directory',
@@ -325,9 +325,9 @@ describe('loadPluginsConfig', () => {
         plugins: {},
       });
 
-      const result = await loadPluginsConfig(setup.testHome);
+      const { config } = await loadPluginsConfig(setup.testHome);
 
-      expect(result).toEqual({
+      expect(config).toEqual({
         marketplaces: {},
         plugins: {},
       });
@@ -347,27 +347,65 @@ describe('loadPluginsConfig', () => {
         plugins: {},
       });
 
-      const result = await loadPluginsConfig(setup.testHome);
-      expect(result?.marketplaces).toEqual({
+      const { config } = await loadPluginsConfig(setup.testHome);
+      expect(config.marketplaces).toEqual({
         test: { source: 'directory', path: '/test' },
       });
     });
   });
 
   describe('error handling', () => {
-    test('returns null when project config does not exist', async () => {
-      const result = await loadPluginsConfig(setup.testHome);
-      expect(result).toBe(null);
+    test('returns empty config when project config does not exist and no other sources', async () => {
+      const { config, sources } = await loadPluginsConfig(setup.testHome);
+      expect(config).toEqual({
+        marketplaces: {},
+        plugins: {},
+      });
+      expect(sources.project).toBeNull();
     });
 
-    test('returns null on invalid project config JSON', async () => {
+    test('returns config from global config even when plugins.json does not exist', async () => {
+      await setupGlobalConfig({
+        marketplaces: {
+          'global-marketplace': {
+            source: 'directory',
+            path: '/global/path',
+          },
+        },
+        plugins: {
+          'plugin@global-marketplace': {
+            enabled: true,
+          },
+        },
+      });
+
+      const { config, sources } = await loadPluginsConfig(setup.testHome);
+
+      expect(config).toEqual({
+        marketplaces: {
+          'global-marketplace': {
+            source: 'directory',
+            path: '/global/path',
+          },
+        },
+        plugins: {
+          'plugin@global-marketplace': {
+            enabled: true,
+          },
+        },
+      });
+      expect(sources.project).toBeNull();
+      expect(sources.global).not.toBeNull();
+      expect(sources.global).toContain('config.json');
+    });
+
+    test('throws error on invalid project config JSON', async () => {
       const cursorDir = join(setup.testHome, '.cursor');
       await mkdir(cursorDir, { recursive: true });
       const configPath = join(cursorDir, 'plugins.json');
       await writeFile(configPath, 'invalid json');
 
-      const result = await loadPluginsConfig(setup.testHome);
-      expect(result).toBe(null);
+      await expect(loadPluginsConfig(setup.testHome)).rejects.toThrow();
     });
 
     test('ignores invalid local config JSON', async () => {
@@ -380,8 +418,8 @@ describe('loadPluginsConfig', () => {
       const localConfigPath = join(cursorDir, 'plugins.local.json');
       await writeFile(localConfigPath, 'invalid json');
 
-      const result = await loadPluginsConfig(setup.testHome);
-      expect(result?.marketplaces).toEqual({
+      const { config } = await loadPluginsConfig(setup.testHome);
+      expect(config.marketplaces).toEqual({
         test: { source: 'directory', path: '/test' },
       });
     });

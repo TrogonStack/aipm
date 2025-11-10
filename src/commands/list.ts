@@ -14,9 +14,9 @@ export async function list(options: ListOptions = {}): Promise<void> {
   const cwd = cmd.cwd || process.cwd();
 
   try {
-    const config = await loadPluginsConfig(cwd);
+    const { config, sources } = await loadPluginsConfig(cwd);
 
-    if (!config) {
+    if (!sources.project) {
       defaultIO.logError("No plugins.json found. Run 'aipm init' first.");
       return;
     }

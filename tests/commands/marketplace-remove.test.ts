@@ -29,16 +29,16 @@ describe('marketplace remove', () => {
         cwd: testDir,
       });
 
-      const configBefore = await loadPluginsConfig(testDir);
-      expect(configBefore?.marketplaces['test-marketplace']).toBeDefined();
+      const { config: configBefore } = await loadPluginsConfig(testDir);
+      expect(configBefore.marketplaces['test-marketplace']).toBeDefined();
 
       await marketplaceRemove({
         name: 'test-marketplace',
         cwd: testDir,
       });
 
-      const configAfter = await loadPluginsConfig(testDir);
-      expect(configAfter?.marketplaces['test-marketplace']).toBeUndefined();
+      const { config: configAfter } = await loadPluginsConfig(testDir);
+      expect(configAfter.marketplaces['test-marketplace']).toBeUndefined();
     });
 
     test('removes marketplace from plugins.local.json', async () => {
@@ -49,8 +49,8 @@ describe('marketplace remove', () => {
         local: true,
       });
 
-      const configBefore = await loadPluginsConfig(testDir);
-      expect(configBefore?.marketplaces['local-marketplace']).toBeDefined();
+      const { config: configBefore } = await loadPluginsConfig(testDir);
+      expect(configBefore.marketplaces['local-marketplace']).toBeDefined();
 
       await marketplaceRemove({
         name: 'local-marketplace',
@@ -58,8 +58,8 @@ describe('marketplace remove', () => {
         local: true,
       });
 
-      const configAfter = await loadPluginsConfig(testDir);
-      expect(configAfter?.marketplaces['local-marketplace']).toBeUndefined();
+      const { config: configAfter } = await loadPluginsConfig(testDir);
+      expect(configAfter.marketplaces['local-marketplace']).toBeUndefined();
     });
 
     test('preserves other marketplaces when removing one', async () => {
@@ -80,9 +80,9 @@ describe('marketplace remove', () => {
         cwd: testDir,
       });
 
-      const config = await loadPluginsConfig(testDir);
-      expect(config?.marketplaces.first).toBeUndefined();
-      expect(config?.marketplaces.second).toBeDefined();
+      const { config } = await loadPluginsConfig(testDir);
+      expect(config.marketplaces.first).toBeUndefined();
+      expect(config.marketplaces.second).toBeDefined();
     });
 
     test('preserves plugins when removing marketplace', async () => {
@@ -106,8 +106,8 @@ describe('marketplace remove', () => {
         cwd: testDir,
       });
 
-      const updatedConfig = await loadPluginsConfig(testDir);
-      expect(updatedConfig?.plugins['test-plugin@marketplace']).toBeDefined();
+      const { config: updatedConfig } = await loadPluginsConfig(testDir);
+      expect(updatedConfig.plugins['test-plugin@marketplace']).toBeDefined();
     });
   });
 
@@ -133,8 +133,8 @@ describe('marketplace remove', () => {
         cwd: testDir,
       });
 
-      const config = await loadPluginsConfig(testDir);
-      expect(config?.marketplaces['non-existent']).toBeUndefined();
+      const { config } = await loadPluginsConfig(testDir);
+      expect(config.marketplaces['non-existent']).toBeUndefined();
     });
 
     test('validates name is not empty', async () => {
@@ -164,8 +164,8 @@ describe('marketplace remove', () => {
         dryRun: true,
       });
 
-      const config = await loadPluginsConfig(testDir);
-      expect(config?.marketplaces['test-marketplace']).toBeDefined();
+      const { config } = await loadPluginsConfig(testDir);
+      expect(config.marketplaces['test-marketplace']).toBeDefined();
     });
   });
 
@@ -182,8 +182,8 @@ describe('marketplace remove', () => {
         cwd: testDir,
       });
 
-      const config = await loadPluginsConfig(testDir);
-      expect(Object.keys(config?.marketplaces ?? {})).toHaveLength(0);
+      const { config } = await loadPluginsConfig(testDir);
+      expect(Object.keys(config.marketplaces ?? {})).toHaveLength(0);
     });
 
     test('can add marketplace after removing it', async () => {
@@ -204,8 +204,8 @@ describe('marketplace remove', () => {
         cwd: testDir,
       });
 
-      const config = await loadPluginsConfig(testDir);
-      expect(config?.marketplaces.test?.path).toBe('./second-path');
+      const { config } = await loadPluginsConfig(testDir);
+      expect(config.marketplaces.test?.path).toBe('./second-path');
     });
   });
 });
