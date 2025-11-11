@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.4.2](https://github.com/TrogonStack/aipm/compare/v0.4.1...v0.4.2) (2025-11-11)
+
+
+### Bug Fixes
+
+* allow command without loading plugin file ([#30](https://github.com/TrogonStack/aipm/issues/30)) ([b707216](https://github.com/TrogonStack/aipm/commit/b707216cceaf0a40dc4c46521248f7f2ad6a4abc))
+* claude code marketplace schema ([#29](https://github.com/TrogonStack/aipm/issues/29)) ([609727e](https://github.com/TrogonStack/aipm/commit/609727e0459deb67e8f0931545dd76f5e18960ae))
+* plugin discovery with recursive directory scanning ([#25](https://github.com/TrogonStack/aipm/issues/25)) ([79b3e66](https://github.com/TrogonStack/aipm/commit/79b3e66db2ced37be15961ba459b827c418a1fae))
+* remove plugins.json check and update error handling in plugin search ([#31](https://github.com/TrogonStack/aipm/issues/31)) ([55e563b](https://github.com/TrogonStack/aipm/commit/55e563b98c22f90a7d3be3874067e76b24ae6a63))
+
 ## [0.4.1](https://github.com/TrogonStack/aipm/compare/v0.4.0...v0.4.1) (2025-11-02)
 
 
