@@ -1,6 +1,5 @@
 import { z } from 'zod';
-import { getConfigPaths, loadPluginsConfig } from '../config/loader';
-import { fileExists } from '../helpers/fs';
+import { loadPluginsConfig } from '../config/loader';
 import { resolveMarketplacePath } from '../helpers/git';
 import { defaultIO } from '../helpers/io';
 import { getAvailablePlugins, getMarketplaceType, loadMarketplaceManifest } from '../helpers/marketplace';
@@ -22,16 +21,14 @@ export async function pluginSearch(options: unknown): Promise<void> {
   const cmd = PluginSearchOptionsSchema.parse(options);
 
   const cwd = cmd.cwd || process.cwd();
-  const paths = getConfigPaths(cwd);
 
   try {
-    if (!(await fileExists(paths.plugins))) {
-      const error = new Error("No plugins.json found. Run 'aipm init' first.");
-      defaultIO.logError(error.message);
-      throw error;
-    }
-
     const { config } = await loadPluginsConfig(cwd);
+
+    if (Object.keys(config.marketplaces).length === 0) {
+      defaultIO.logInfo('No marketplaces configured. Add a marketplace first with: aipm marketplace add <name> <path>');
+      return;
+    }
 
     const allPlugins: PluginInfo[] = [];
 
