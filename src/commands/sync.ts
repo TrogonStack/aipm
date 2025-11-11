@@ -34,11 +34,7 @@ export async function sync(options: SyncOptions = {}): Promise<void> {
       return;
     }
 
-    const config = await loadPluginsConfig(cwd);
-    if (!config) {
-      defaultIO.logError('Failed to load config');
-      return;
-    }
+    const { config } = await loadPluginsConfig(cwd);
 
     const enabledPlugins = Object.entries(config.plugins)
       .filter(([_, plugin]) => plugin.enabled)

@@ -1,7 +1,7 @@
 import { readdir, realpath } from 'node:fs/promises';
 import { join, relative, sep } from 'node:path';
 import { DIR_CLAUDE_PLUGIN, FILE_MARKETPLACE_MANIFEST } from '../constants';
-import { isNodeError } from '../errors';
+import { isFileNotFoundError } from '../errors';
 import type { MarketplaceManifest, MarketplaceType } from '../schema';
 import { MarketplaceManifestSchema } from '../schema';
 import { fileExists, JsonFileError, readJsonFile } from './fs';
@@ -21,7 +21,7 @@ export async function loadAipmMarketplaceManifest(marketplacePath: string): Prom
     return await readJsonFile(manifestPath, MarketplaceManifestSchema);
   } catch (error) {
     // Handle missing file gracefully
-    if (isNodeError(error) && error.code === 'ENOENT') {
+    if (isFileNotFoundError(error)) {
       return null;
     }
 
@@ -48,7 +48,7 @@ export async function loadClaudeCodeMarketplaceManifest(marketplacePath: string)
     return await readJsonFile(claudePluginManifestPath, MarketplaceManifestSchema);
   } catch (error) {
     // Handle missing file gracefully
-    if (isNodeError(error) && error.code === 'ENOENT') {
+    if (isFileNotFoundError(error)) {
       return null;
     }
 

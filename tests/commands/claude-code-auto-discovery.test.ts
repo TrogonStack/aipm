@@ -42,11 +42,11 @@ describe('Claude Code Auto-Discovery Integration', () => {
 
     await init({ cwd: testDir, skipConfirm: true });
 
-    const config = await loadPluginsConfig(testDir);
+    const { config } = await loadPluginsConfig(testDir);
 
-    expect(config?.marketplaces['claude:anthropic-agent-skills']?.source).toBe('directory');
-    expect(config?.marketplaces['claude:anthropic-agent-skills']?.path).toContain('anthropic-agent-skills');
-    expect(config?.marketplaces['claude:claude-code-workflows']).toBeDefined();
+    expect(config.marketplaces['claude:anthropic-agent-skills']?.source).toBe('directory');
+    expect(config.marketplaces['claude:anthropic-agent-skills']?.path).toContain('anthropic-agent-skills');
+    expect(config.marketplaces['claude:claude-code-workflows']).toBeDefined();
   });
 
   test('Claude Code marketplaces appear in aipm list command', async () => {
@@ -98,9 +98,9 @@ describe('Claude Code Auto-Discovery Integration', () => {
 
     await init({ cwd: testDir, skipConfirm: true });
 
-    const config = await loadPluginsConfig(testDir);
+    const { config } = await loadPluginsConfig(testDir);
 
-    expect(config?.marketplaces['claude:test-marketplace']?.source).toBe('directory');
+    expect(config.marketplaces['claude:test-marketplace']?.source).toBe('directory');
   });
 
   test('does not interfere with manually configured AIPM marketplaces', async () => {
@@ -131,19 +131,19 @@ describe('Claude Code Auto-Discovery Integration', () => {
 
     await writeFile(configPath, JSON.stringify(aipmConfig, null, 2));
 
-    const config = await loadPluginsConfig(testDir);
+    const { config } = await loadPluginsConfig(testDir);
 
-    expect(config?.marketplaces['my-marketplace']).toBeDefined();
-    expect(config?.marketplaces['claude:claude-marketplace']).toBeDefined();
+    expect(config.marketplaces['my-marketplace']).toBeDefined();
+    expect(config.marketplaces['claude:claude-marketplace']).toBeDefined();
   });
 
   test('handles missing Claude Code installation gracefully', async () => {
     await init({ cwd: testDir, skipConfirm: true });
 
-    const config = await loadPluginsConfig(testDir);
+    const { config } = await loadPluginsConfig(testDir);
 
     expect(config).not.toBeNull();
-    const claudeMarketplaces = Object.keys(config?.marketplaces || {}).filter((name) => name.startsWith('claude:'));
+    const claudeMarketplaces = Object.keys(config.marketplaces || {}).filter((name) => name.startsWith('claude:'));
     expect(claudeMarketplaces).toHaveLength(0);
   });
 
@@ -175,9 +175,9 @@ describe('Claude Code Auto-Discovery Integration', () => {
 
     await writeFile(configPath, JSON.stringify(aipmConfig, null, 2));
 
-    const config = await loadPluginsConfig(testDir);
+    const { config } = await loadPluginsConfig(testDir);
 
-    expect(config?.marketplaces['claude:my-marketplace']?.path).toBe('./aipm-marketplace');
+    expect(config.marketplaces['claude:my-marketplace']?.path).toBe('./aipm-marketplace');
   });
 
   test('discovers git-based Claude Code marketplace', async () => {
@@ -196,10 +196,10 @@ describe('Claude Code Auto-Discovery Integration', () => {
 
     await init({ cwd: testDir, skipConfirm: true });
 
-    const config = await loadPluginsConfig(testDir);
+    const { config } = await loadPluginsConfig(testDir);
 
-    expect(config?.marketplaces['claude:git-marketplace']?.source).toBe('git');
-    expect(config?.marketplaces['claude:git-marketplace']?.url).toBe('https://github.com/org/marketplace.git');
-    expect(config?.marketplaces['claude:git-marketplace']?.branch).toBe('main');
+    expect(config.marketplaces['claude:git-marketplace']?.source).toBe('git');
+    expect(config.marketplaces['claude:git-marketplace']?.url).toBe('https://github.com/org/marketplace.git');
+    expect(config.marketplaces['claude:git-marketplace']?.branch).toBe('main');
   });
 });

@@ -1,6 +1,6 @@
 import { join } from 'node:path';
 import { DIR_CLAUDE_PLUGIN, FILE_PLUGIN_MANIFEST } from '../constants';
-import { isNodeError, PluginManifestInvalidError, PluginManifestNotFoundError } from '../errors';
+import { isFileNotFoundError, PluginManifestInvalidError, PluginManifestNotFoundError } from '../errors';
 import type { PluginManifest } from '../schema';
 import { PluginManifestSchema } from '../schema';
 import { readJsonFile } from './fs';
@@ -12,7 +12,7 @@ export async function loadPluginManifest(pluginPath: string): Promise<PluginMani
     const manifest = await readJsonFile(manifestPath, PluginManifestSchema);
     return manifest;
   } catch (error: unknown) {
-    if (isNodeError(error) && error.code === 'ENOENT') {
+    if (isFileNotFoundError(error)) {
       throw new PluginManifestNotFoundError(pluginPath, { cause: error });
     }
     throw new PluginManifestInvalidError(pluginPath, { cause: error });

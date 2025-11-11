@@ -25,8 +25,8 @@ describe('marketplace add with GitHub shorthand', () => {
       cwd: testDir,
     });
 
-    const config = await loadPluginsConfig(testDir);
-    const marketplace = config?.marketplaces.community;
+    const { config } = await loadPluginsConfig(testDir);
+    const marketplace = config.marketplaces.community;
 
     expect(marketplace).toBeDefined();
     expect(marketplace?.source).toBe('git');
@@ -42,8 +42,8 @@ describe('marketplace add with GitHub shorthand', () => {
       cwd: testDir,
     });
 
-    const config = await loadPluginsConfig(testDir);
-    const marketplace = config?.marketplaces.team;
+    const { config } = await loadPluginsConfig(testDir);
+    const marketplace = config.marketplaces.team;
 
     expect(marketplace).toBeDefined();
     expect(marketplace?.source).toBe('git');
@@ -59,8 +59,8 @@ describe('marketplace add with GitHub shorthand', () => {
       cwd: testDir,
     });
 
-    const config = await loadPluginsConfig(testDir);
-    const marketplace = config?.marketplaces.special;
+    const { config } = await loadPluginsConfig(testDir);
+    const marketplace = config.marketplaces.special;
 
     expect(marketplace).toBeDefined();
     expect(marketplace?.source).toBe('git');
@@ -76,8 +76,8 @@ describe('marketplace add with GitHub shorthand', () => {
       cwd: testDir,
     });
 
-    const config = await loadPluginsConfig(testDir);
-    const marketplace = config?.marketplaces['full-url'];
+    const { config } = await loadPluginsConfig(testDir);
+    const marketplace = config.marketplaces['full-url'];
 
     expect(marketplace).toBeDefined();
     expect(marketplace?.source).toBe('git');
@@ -91,8 +91,8 @@ describe('marketplace add with GitHub shorthand', () => {
       cwd: testDir,
     });
 
-    const config = await loadPluginsConfig(testDir);
-    const marketplace = config?.marketplaces['ssh-url'];
+    const { config } = await loadPluginsConfig(testDir);
+    const marketplace = config.marketplaces['ssh-url'];
 
     expect(marketplace).toBeDefined();
     expect(marketplace?.source).toBe('git');
@@ -106,8 +106,8 @@ describe('marketplace add with GitHub shorthand', () => {
       cwd: testDir,
     });
 
-    const config = await loadPluginsConfig(testDir);
-    const marketplace = config?.marketplaces.local;
+    const { config } = await loadPluginsConfig(testDir);
+    const marketplace = config.marketplaces.local;
 
     expect(marketplace).toBeDefined();
     expect(marketplace?.source).toBe('directory');
@@ -121,8 +121,8 @@ describe('marketplace add with GitHub shorthand', () => {
       cwd: testDir,
     });
 
-    const config = await loadPluginsConfig(testDir);
-    const marketplace = config?.marketplaces.invalid;
+    const { config } = await loadPluginsConfig(testDir);
+    const marketplace = config.marketplaces.invalid;
 
     expect(marketplace).toBeDefined();
     expect(marketplace?.source).toBe('directory');
@@ -137,8 +137,8 @@ describe('marketplace add with GitHub shorthand', () => {
       dryRun: true,
     });
 
-    const config = await loadPluginsConfig(testDir);
-    const marketplace = config?.marketplaces.dry;
+    const { config } = await loadPluginsConfig(testDir);
+    const marketplace = config.marketplaces.dry;
 
     expect(marketplace).toBeUndefined();
   });

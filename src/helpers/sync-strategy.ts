@@ -1,6 +1,6 @@
 import { cp, readdir, readFile, writeFile } from 'node:fs/promises';
 import { basename, extname, join } from 'node:path';
-import { DirectoryNotFoundError, isNodeError } from '../errors';
+import { DirectoryNotFoundError, isFileNotFoundError } from '../errors';
 import { applyCursorFrontmatter } from './frontmatter';
 import { ensureDir, fileExists } from './fs';
 
@@ -86,7 +86,7 @@ async function syncRulesDirectory(sourceDir: string, targetDir: string): Promise
   try {
     entries = await readdir(sourceDir, { withFileTypes: true });
   } catch (error: unknown) {
-    if (isNodeError(error) && error.code === 'ENOENT') {
+    if (isFileNotFoundError(error)) {
       return 0;
     }
     throw new DirectoryNotFoundError(sourceDir, { cause: error });
@@ -161,7 +161,7 @@ async function syncDirectory(sourceDir: string, targetDir: string, extensions: s
   try {
     entries = await readdir(sourceDir, { withFileTypes: true });
   } catch (error: unknown) {
-    if (isNodeError(error) && error.code === 'ENOENT') {
+    if (isFileNotFoundError(error)) {
       return 0;
     }
     throw new DirectoryNotFoundError(sourceDir, { cause: error });

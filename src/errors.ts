@@ -2,6 +2,10 @@ export function isNodeError(error: unknown): error is NodeJS.ErrnoException {
   return error instanceof Error && 'code' in error;
 }
 
+export function isFileNotFoundError(error: unknown): error is NodeJS.ErrnoException {
+  return isNodeError(error) && error.code === 'ENOENT';
+}
+
 export class PluginManifestNotFoundError extends Error {
   constructor(
     public readonly pluginPath: string,

@@ -26,11 +26,7 @@ export async function pluginDisable(options: unknown): Promise<void> {
       return;
     }
 
-    const config = await loadPluginsConfig(cwd);
-    if (!config) {
-      defaultIO.logError('Failed to load config');
-      return;
-    }
+    const { config } = await loadPluginsConfig(cwd);
 
     const plugin = config.plugins[cmd.pluginId];
 

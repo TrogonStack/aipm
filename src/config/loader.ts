@@ -7,14 +7,15 @@ import {
   FILE_PLUGINS_EXAMPLE,
   FILE_PLUGINS_LOCAL,
 } from '../constants';
+import { isFileNotFoundError } from '../errors';
 import {
   convertClaudeMarketplaceToAIPM,
+  getClaudeCodePluginsDir,
   isClaudeCodeInstalled,
   readClaudeCodeMarketplaces,
 } from '../helpers/claude-code-config';
-import { fileExists } from '../helpers/fs';
 import { getGlobalDir } from '../helpers/paths';
-import type { PluginsConfig } from '../schema';
+import type { MarketplaceSource, PluginsConfig } from '../schema';
 import { PluginsConfigSchema } from '../schema';
 
 export class ConfigValidationError extends Error {
@@ -30,7 +31,7 @@ export class ConfigValidationError extends Error {
 async function loadOptionalConfig(
   path: string,
   options: { ignoreValidationErrors?: boolean } = {},
-): Promise<{ marketplaces: Record<string, any>; plugins: Record<string, any> }> {
+): Promise<{ config: PluginsConfig; path: string | null }> {
   try {
     const file = Bun.file(path);
     const rawConfig = await file.json();
@@ -39,27 +40,30 @@ async function loadOptionalConfig(
     if (!parseResult.success) {
       const error = new ConfigValidationError(path, { cause: parseResult.error });
       if (options.ignoreValidationErrors) {
-        return { marketplaces: {}, plugins: {} };
+        return { config: { marketplaces: {}, plugins: {} }, path: null };
       }
       throw error;
     }
 
     return {
-      marketplaces: parseResult.data.marketplaces || {},
-      plugins: parseResult.data.plugins || {},
+      config: {
+        marketplaces: parseResult.data.marketplaces || {},
+        plugins: parseResult.data.plugins || {},
+      },
+      path,
     };
   } catch (error) {
     if (error instanceof ConfigValidationError && !options.ignoreValidationErrors) {
       throw error;
     }
-    return { marketplaces: {}, plugins: {} };
+    if (isFileNotFoundError(error)) {
+      return { config: { marketplaces: {}, plugins: {} }, path: null };
+    }
+    return { config: { marketplaces: {}, plugins: {} }, path: null };
   }
 }
 
-export async function loadPluginsConfig(baseDir: string): Promise<PluginsConfig | null> {
-  const configPath = join(baseDir, DIR_CURSOR, FILE_PLUGINS_CONFIG);
-  const localConfigPath = join(baseDir, DIR_CURSOR, FILE_PLUGINS_LOCAL);
-
+async function loadProjectConfig(configPath: string): Promise<PluginsConfig | null> {
   try {
     const file = Bun.file(configPath);
     const rawConfig = await file.json();
@@ -69,55 +73,97 @@ export async function loadPluginsConfig(baseDir: string): Promise<PluginsConfig 
       throw new ConfigValidationError(configPath, { cause: parseResult.error });
     }
 
-    const config = parseResult.data;
-
-    const globalDir = getGlobalDir();
-    const globalConfigPath = join(globalDir, FILE_GLOBAL_CONFIG);
-    const globalConfigExists = await fileExists(globalConfigPath);
-
-    const { marketplaces: globalMarketplaces, plugins: globalPlugins } = globalConfigExists
-      ? await loadOptionalConfig(globalConfigPath, { ignoreValidationErrors: true })
-      : { marketplaces: {}, plugins: {} };
-
-    const { marketplaces: localMarketplaces, plugins: localPlugins } = await loadOptionalConfig(localConfigPath);
-
-    const claudeMarketplaces: Record<string, ReturnType<typeof convertClaudeMarketplaceToAIPM>> = {};
-    if (await isClaudeCodeInstalled()) {
-      const claudeCodeMarketplaces = await readClaudeCodeMarketplaces();
-
-      for (const [marketplaceName, marketplaceConfig] of Object.entries(claudeCodeMarketplaces)) {
-        const prefixedName = `claude:${marketplaceName}`;
-
-        if (globalMarketplaces[prefixedName] || config.marketplaces[prefixedName] || localMarketplaces[prefixedName]) {
-          console.warn(
-            `⚠️  Skipping Claude Code marketplace '${prefixedName}' - name conflict with existing AIPM marketplace`,
-          );
-          continue;
-        }
-
-        claudeMarketplaces[prefixedName] = convertClaudeMarketplaceToAIPM(marketplaceName, marketplaceConfig);
-      }
-    }
-
-    return {
-      marketplaces: {
-        ...globalMarketplaces,
-        ...config.marketplaces,
-        ...localMarketplaces,
-        ...claudeMarketplaces,
-      },
-      plugins: {
-        ...globalPlugins,
-        ...config.plugins,
-        ...localPlugins,
-      },
-    };
+    return parseResult.data;
   } catch (error) {
     if (error instanceof ConfigValidationError) {
       throw error;
     }
-    return null;
+    // File doesn't exist - return null so caller can check other sources
+    if (isFileNotFoundError(error)) {
+      return null;
+    }
+    // Other errors should be thrown
+    throw error;
   }
+}
+
+export type PluginsConfigWithMetadata = {
+  config: PluginsConfig;
+  sources: {
+    project: string | null;
+    global: string | null;
+    local: string | null;
+    claude: string | null;
+  };
+};
+
+export async function loadPluginsConfig(baseDir: string): Promise<PluginsConfigWithMetadata> {
+  const configPath = join(baseDir, DIR_CURSOR, FILE_PLUGINS_CONFIG);
+  const localConfigPath = join(baseDir, DIR_CURSOR, FILE_PLUGINS_LOCAL);
+
+  const config = await loadProjectConfig(configPath);
+  const projectConfigPath = config !== null ? configPath : null;
+
+  const globalDir = getGlobalDir();
+  const globalConfigPath = join(globalDir, FILE_GLOBAL_CONFIG);
+
+  const { config: globalConfig, path: globalConfigPathResult } = await loadOptionalConfig(globalConfigPath, {
+    ignoreValidationErrors: true,
+  });
+
+  const { config: localConfig, path: localConfigPathResult } = await loadOptionalConfig(localConfigPath);
+
+  const claudeMarketplaces: Record<string, MarketplaceSource> = {};
+  let claudeConfigPath: string | null = null;
+  if (await isClaudeCodeInstalled()) {
+    const claudeCodeMarketplaces = await readClaudeCodeMarketplaces();
+
+    for (const [marketplaceName, marketplaceConfig] of Object.entries(claudeCodeMarketplaces)) {
+      const prefixedName = `claude:${marketplaceName}`;
+
+      if (
+        globalConfig.marketplaces[prefixedName] ||
+        config?.marketplaces[prefixedName] ||
+        localConfig.marketplaces[prefixedName]
+      ) {
+        console.warn(
+          `⚠️  Skipping Claude Code marketplace '${prefixedName}' - name conflict with existing AIPM marketplace`,
+        );
+        continue;
+      }
+
+      claudeMarketplaces[prefixedName] = convertClaudeMarketplaceToAIPM(
+        marketplaceName,
+        marketplaceConfig,
+      ) as MarketplaceSource;
+      // Claude Code config is loaded from Claude Code's plugins directory
+      if (claudeConfigPath === null) {
+        claudeConfigPath = getClaudeCodePluginsDir();
+      }
+    }
+  }
+
+  return {
+    config: {
+      marketplaces: {
+        ...globalConfig.marketplaces,
+        ...(config?.marketplaces ?? {}),
+        ...localConfig.marketplaces,
+        ...claudeMarketplaces,
+      },
+      plugins: {
+        ...globalConfig.plugins,
+        ...(config?.plugins ?? {}),
+        ...localConfig.plugins,
+      },
+    },
+    sources: {
+      project: projectConfigPath,
+      global: globalConfigPathResult,
+      local: localConfigPathResult,
+      claude: claudeConfigPath,
+    },
+  };
 }
 
 export function getConfigPaths(baseDir: string) {

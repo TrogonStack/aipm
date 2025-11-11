@@ -26,11 +26,7 @@ export async function pluginEnable(options: unknown): Promise<void> {
       return;
     }
 
-    const config = await loadPluginsConfig(cwd);
-    if (!config) {
-      defaultIO.logError('Failed to load config');
-      return;
-    }
+    const { config } = await loadPluginsConfig(cwd);
 
     if (!config.plugins[cmd.pluginId]) {
       defaultIO.logInfo(`Plugin '${cmd.pluginId}' not found, adding it as enabled`);
