@@ -3,7 +3,7 @@ import { getConfigPaths, loadPluginsConfig } from '../config/loader';
 import { fileExists } from '../helpers/fs';
 import { resolveMarketplacePath } from '../helpers/git';
 import { defaultIO } from '../helpers/io';
-import { getAvailablePlugins, loadMarketplaceManifest } from '../helpers/marketplace';
+import { getAvailablePlugins, getMarketplaceType, loadMarketplaceManifest } from '../helpers/marketplace';
 
 const PluginSearchOptionsSchema = z.object({
   query: z.string().optional(),
@@ -48,7 +48,7 @@ export async function pluginSearch(options: unknown): Promise<void> {
           continue;
         }
 
-        const manifest = await loadMarketplaceManifest(marketplacePath);
+        const manifest = await loadMarketplaceManifest(marketplacePath, getMarketplaceType(marketplaceName));
         const availablePlugins = await getAvailablePlugins(marketplacePath, manifest);
 
         for (const pluginName of availablePlugins) {

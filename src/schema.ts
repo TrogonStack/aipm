@@ -8,6 +8,8 @@ export const MarketplaceSourceSchema = z.object({
   branch: z.string().optional(),
 });
 
+export const MarketplaceTypeSchema = z.enum(['aipm', 'claude']);
+
 export const MarketplaceOwnerSchema = z.object({
   name: z.string(),
   email: z.string().optional(),
@@ -70,6 +72,7 @@ export const GlobalMarketplaceConfigSchema = z.object({
 });
 
 export type MarketplaceSource = z.infer<typeof MarketplaceSourceSchema>;
+export type MarketplaceType = z.infer<typeof MarketplaceTypeSchema>;
 export type MarketplaceMetadata = z.infer<typeof MarketplaceMetadataSchema>;
 export type MarketplaceOwner = z.infer<typeof MarketplaceOwnerSchema>;
 export type MarketplacePluginEntry = z.infer<typeof MarketplacePluginEntrySchema>;

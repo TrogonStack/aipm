@@ -83,7 +83,7 @@ describe('marketplace utilities', () => {
 
   describe('loadMarketplaceManifest', () => {
     test("returns null when marketplace.json doesn't exist", async () => {
-      const result = await loadMarketplaceManifest(testDir);
+      const result = await loadMarketplaceManifest(testDir, 'aipm');
       expect(result).toBeNull();
     });
 
@@ -114,21 +114,21 @@ describe('marketplace utilities', () => {
 
       await writeFile(join(testDir, 'marketplace.json'), JSON.stringify(manifest));
 
-      const result = await loadMarketplaceManifest(testDir);
+      const result = await loadMarketplaceManifest(testDir, 'aipm');
       expect(result).toEqual(manifest);
     });
 
     test('returns null for invalid marketplace.json', async () => {
       await writeFile(join(testDir, 'marketplace.json'), JSON.stringify({ invalid: 'data' }));
 
-      const result = await loadMarketplaceManifest(testDir);
+      const result = await loadMarketplaceManifest(testDir, 'aipm');
       expect(result).toBeNull();
     });
 
     test('returns null for malformed JSON', async () => {
       await writeFile(join(testDir, 'marketplace.json'), '{invalid json}');
 
-      const result = await loadMarketplaceManifest(testDir);
+      const result = await loadMarketplaceManifest(testDir, 'aipm');
       expect(result).toBeNull();
     });
   });

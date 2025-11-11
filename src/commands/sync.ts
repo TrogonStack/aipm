@@ -6,7 +6,12 @@ import { DIR_CURSOR, DIR_MARKETPLACE } from '../constants';
 import { ensureDir, fileExists } from '../helpers/fs';
 import { resolveMarketplacePath } from '../helpers/git';
 import { defaultIO } from '../helpers/io';
-import { getPluginSourcePath, isPluginInManifest, loadMarketplaceManifest } from '../helpers/marketplace';
+import {
+  getMarketplaceType,
+  getPluginSourcePath,
+  isPluginInManifest,
+  loadMarketplaceManifest,
+} from '../helpers/marketplace';
 import { formatSyncResult, syncPluginToCursor } from '../helpers/sync-strategy';
 
 const SyncOptionsSchema = z.object({
@@ -100,7 +105,9 @@ export async function sync(options: SyncOptions = {}): Promise<void> {
         continue;
       }
 
-      const manifest = !cmd.dryRun ? await loadMarketplaceManifest(marketplacePath) : null;
+      const manifest = !cmd.dryRun
+        ? await loadMarketplaceManifest(marketplacePath, getMarketplaceType(marketplaceName))
+        : null;
 
       if (!isPluginInManifest(pluginName, manifest)) {
         defaultIO.logError(`Plugin '${pluginName}' not found in marketplace.json for '${marketplaceName}'`);

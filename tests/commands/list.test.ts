@@ -2,21 +2,23 @@ import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { init } from '../../src/commands/init';
 import { list } from '../../src/commands/list';
 import { marketplaceAdd } from '../../src/commands/marketplace-add';
 import { writeJsonFile } from '../../src/helpers/fs';
+import { setupTestEnvironment } from '../helpers/test-setup';
 
 describe('list command', () => {
   let testDir: string;
+  let cleanup: () => Promise<void>;
 
   beforeEach(async () => {
-    testDir = await mkdtemp(join(tmpdir(), 'cursor-list-test-'));
-    await init({ cwd: testDir });
+    const setup = await setupTestEnvironment({ initProject: true });
+    testDir = setup.testDir!;
+    cleanup = setup.cleanup;
   });
 
   afterEach(async () => {
-    await rm(testDir, { recursive: true, force: true });
+    await cleanup();
   });
 
   describe('basic functionality', () => {

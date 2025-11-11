@@ -1,36 +1,30 @@
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
-import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
+import { mkdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { loadPluginsConfig } from '../../src/config/loader';
-import { getGlobalDir, resetEnvCache } from '../../src/helpers/paths';
+import { getGlobalDir } from '../../src/helpers/paths';
+import { setupTestEnvironment, type TestSetup } from '../helpers/test-setup';
 
 describe('loadPluginsConfig', () => {
-  let testDir: string;
-  let originalHome: string | undefined;
+  let setup: TestSetup;
 
   beforeEach(async () => {
-    testDir = await mkdtemp(join(tmpdir(), 'cursor-loader-test-'));
-    originalHome = process.env.HOME;
-    process.env.HOME = testDir;
-    resetEnvCache(); // Reset cache after modifying env
+    setup = await setupTestEnvironment();
   });
 
   afterEach(async () => {
-    process.env.HOME = originalHome;
-    resetEnvCache(); // Reset cache after cleanup
-    await rm(testDir, { recursive: true, force: true });
+    await setup.cleanup();
   });
 
   async function setupProjectConfig(config: any) {
-    const cursorDir = join(testDir, '.cursor');
+    const cursorDir = join(setup.testHome, '.cursor');
     await mkdir(cursorDir, { recursive: true });
     const configPath = join(cursorDir, 'plugins.json');
     await writeFile(configPath, JSON.stringify(config, null, 2));
   }
 
   async function setupLocalConfig(config: any) {
-    const cursorDir = join(testDir, '.cursor');
+    const cursorDir = join(setup.testHome, '.cursor');
     await mkdir(cursorDir, { recursive: true });
     const configPath = join(cursorDir, 'plugins.local.json');
     await writeFile(configPath, JSON.stringify(config, null, 2));
@@ -59,7 +53,7 @@ describe('loadPluginsConfig', () => {
         },
       });
 
-      const result = await loadPluginsConfig(testDir);
+      const result = await loadPluginsConfig(setup.testHome);
 
       expect(result).toEqual({
         marketplaces: {
@@ -106,7 +100,7 @@ describe('loadPluginsConfig', () => {
         },
       });
 
-      const result = await loadPluginsConfig(testDir);
+      const result = await loadPluginsConfig(setup.testHome);
 
       expect(result).toEqual({
         marketplaces: {
@@ -161,7 +155,7 @@ describe('loadPluginsConfig', () => {
         },
       });
 
-      const result = await loadPluginsConfig(testDir);
+      const result = await loadPluginsConfig(setup.testHome);
 
       expect(result?.marketplaces.shared?.path).toBe('/project/path');
       expect(result?.plugins['plugin@shared']?.enabled).toBe(true);
@@ -213,7 +207,7 @@ describe('loadPluginsConfig', () => {
         },
       });
 
-      const result = await loadPluginsConfig(testDir);
+      const result = await loadPluginsConfig(setup.testHome);
 
       expect(result?.marketplaces.shared?.path).toBe('/local/path');
       expect(result?.plugins['plugin@shared']?.enabled).toBe(false);
@@ -263,7 +257,7 @@ describe('loadPluginsConfig', () => {
         },
       });
 
-      const result = await loadPluginsConfig(testDir);
+      const result = await loadPluginsConfig(setup.testHome);
 
       expect(result?.marketplaces).toEqual({
         'global-only': { source: 'directory', path: '/global/path' },
@@ -286,7 +280,7 @@ describe('loadPluginsConfig', () => {
         plugins: {},
       });
 
-      const result = await loadPluginsConfig(testDir);
+      const result = await loadPluginsConfig(setup.testHome);
 
       expect(result).toEqual({
         marketplaces: {},
@@ -310,7 +304,7 @@ describe('loadPluginsConfig', () => {
         plugins: {},
       });
 
-      const result = await loadPluginsConfig(testDir);
+      const result = await loadPluginsConfig(setup.testHome);
 
       expect(result).toEqual({
         marketplaces: {
@@ -331,7 +325,7 @@ describe('loadPluginsConfig', () => {
         plugins: {},
       });
 
-      const result = await loadPluginsConfig(testDir);
+      const result = await loadPluginsConfig(setup.testHome);
 
       expect(result).toEqual({
         marketplaces: {},
@@ -353,7 +347,7 @@ describe('loadPluginsConfig', () => {
         plugins: {},
       });
 
-      const result = await loadPluginsConfig(testDir);
+      const result = await loadPluginsConfig(setup.testHome);
       expect(result?.marketplaces).toEqual({
         test: { source: 'directory', path: '/test' },
       });
@@ -362,17 +356,17 @@ describe('loadPluginsConfig', () => {
 
   describe('error handling', () => {
     test('returns null when project config does not exist', async () => {
-      const result = await loadPluginsConfig(testDir);
+      const result = await loadPluginsConfig(setup.testHome);
       expect(result).toBe(null);
     });
 
     test('returns null on invalid project config JSON', async () => {
-      const cursorDir = join(testDir, '.cursor');
+      const cursorDir = join(setup.testHome, '.cursor');
       await mkdir(cursorDir, { recursive: true });
       const configPath = join(cursorDir, 'plugins.json');
       await writeFile(configPath, 'invalid json');
 
-      const result = await loadPluginsConfig(testDir);
+      const result = await loadPluginsConfig(setup.testHome);
       expect(result).toBe(null);
     });
 
@@ -382,11 +376,11 @@ describe('loadPluginsConfig', () => {
         plugins: {},
       });
 
-      const cursorDir = join(testDir, '.cursor');
+      const cursorDir = join(setup.testHome, '.cursor');
       const localConfigPath = join(cursorDir, 'plugins.local.json');
       await writeFile(localConfigPath, 'invalid json');
 
-      const result = await loadPluginsConfig(testDir);
+      const result = await loadPluginsConfig(setup.testHome);
       expect(result?.marketplaces).toEqual({
         test: { source: 'directory', path: '/test' },
       });

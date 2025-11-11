@@ -5,7 +5,12 @@ import { DIR_CURSOR } from '../constants';
 import { fileExists } from '../helpers/fs';
 import { resolveMarketplacePath } from '../helpers/git';
 import { defaultIO } from '../helpers/io';
-import { getPluginSourcePath, isPluginInManifest, loadMarketplaceManifest } from '../helpers/marketplace';
+import {
+  getMarketplaceType,
+  getPluginSourcePath,
+  isPluginInManifest,
+  loadMarketplaceManifest,
+} from '../helpers/marketplace';
 import { validatePluginStructure } from '../helpers/plugin';
 import { formatSyncResult, syncPluginToCursor } from '../helpers/sync-strategy';
 
@@ -67,7 +72,9 @@ export async function pluginUpdate(options: unknown): Promise<void> {
       throw error;
     }
 
-    const manifest = !cmd.dryRun ? await loadMarketplaceManifest(marketplacePath) : null;
+    const manifest = !cmd.dryRun
+      ? await loadMarketplaceManifest(marketplacePath, getMarketplaceType(marketplaceName))
+      : null;
 
     if (!isPluginInManifest(pluginName, manifest)) {
       const error = new Error(`Plugin '${pluginName}' not found in marketplace '${marketplaceName}'`);
