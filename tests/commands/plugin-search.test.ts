@@ -1,8 +1,10 @@
-import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
+import { afterEach, beforeEach, describe, expect, spyOn, test } from 'bun:test';
 import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { pluginSearch } from '../../src/commands/plugin-search';
+import * as claudeCodeConfig from '../../src/helpers/claude-code-config';
+import { defaultIO } from '../../src/helpers/io';
 
 describe('plugin-search', () => {
   let testDir: string;
@@ -277,12 +279,23 @@ describe('plugin-search', () => {
   });
 
   describe('error handling', () => {
-    test('should error if no plugins.json found', async () => {
+    test('should log info if no marketplaces configured', async () => {
       const options = {
         cwd: testDir,
       };
 
-      await expect(pluginSearch(options)).rejects.toThrow('No plugins.json found');
+      // Mock Claude Code as not installed to ensure no auto-discovered marketplaces
+      const claudeSpy = spyOn(claudeCodeConfig, 'isClaudeCodeInstalled').mockResolvedValue(false);
+      const infoSpy = spyOn(defaultIO, 'logInfo');
+
+      await pluginSearch(options);
+
+      expect(infoSpy).toHaveBeenCalledWith(
+        'No marketplaces configured. Add a marketplace first with: aipm marketplace add <name> <path>',
+      );
+
+      claudeSpy.mockRestore();
+      infoSpy.mockRestore();
     });
 
     test('should handle marketplaces with invalid paths', async () => {
