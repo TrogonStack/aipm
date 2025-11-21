@@ -98,7 +98,7 @@ describe('sync command', () => {
         cwd: testDir,
       });
 
-      const pluginsPath = join(testDir, '.cursor', 'plugins.json');
+      const pluginsPath = join(testDir, '.aipm', 'config.json');
       const config = await Bun.file(pluginsPath).json();
       config.plugins['disabled@local'].enabled = false;
       await Bun.write(pluginsPath, JSON.stringify(config, null, 2));
@@ -132,7 +132,7 @@ describe('sync command', () => {
         cwd: testDir,
       });
 
-      const pluginsPath = join(testDir, '.cursor', 'plugins.json');
+      const pluginsPath = join(testDir, '.aipm', 'config.json');
       const config = await Bun.file(pluginsPath).json();
       config.plugins['plugin1@local'].enabled = false;
       await Bun.write(pluginsPath, JSON.stringify(config, null, 2));
@@ -162,7 +162,7 @@ describe('sync command', () => {
     });
 
     test('skips invalid plugin ID format', async () => {
-      const pluginsPath = join(testDir, '.cursor', 'plugins.json');
+      const pluginsPath = join(testDir, '.aipm', 'config.json');
       const config = await Bun.file(pluginsPath).json();
       config.plugins['invalid-format'] = { enabled: true };
       await Bun.write(pluginsPath, JSON.stringify(config, null, 2));
@@ -180,7 +180,7 @@ describe('sync command', () => {
     });
 
     test('skips git marketplace with missing url', async () => {
-      const pluginsPath = join(testDir, '.cursor', 'plugins.json');
+      const pluginsPath = join(testDir, '.aipm', 'config.json');
       const config = await Bun.file(pluginsPath).json();
       config.marketplaces['git-no-url'] = {
         source: 'git',
@@ -192,7 +192,7 @@ describe('sync command', () => {
     });
 
     test('skips marketplace with missing path', async () => {
-      const pluginsPath = join(testDir, '.cursor', 'plugins.json');
+      const pluginsPath = join(testDir, '.aipm', 'config.json');
       const config = await Bun.file(pluginsPath).json();
       config.marketplaces.bad = {
         source: 'directory',
@@ -290,6 +290,188 @@ describe('sync command', () => {
       await sync({ cwd: testDir, dryRun: true });
 
       expect(await fileExists(join(marketplaceDir, 'existing-file.txt'))).toBe(true);
+    });
+  });
+
+  describe('integrations configuration', () => {
+    async function createPluginWithTypes(name: string) {
+      const pluginPath = join(marketplaceDir, name);
+      await mkdir(pluginPath, { recursive: true });
+      await mkdir(join(pluginPath, '.claude-plugin'));
+      await writeFile(
+        join(pluginPath, '.claude-plugin', 'plugin.json'),
+        JSON.stringify({
+          name,
+          version: '1.0.0',
+          description: 'Test plugin',
+        }),
+      );
+
+      // Create different types of files
+      await mkdir(join(pluginPath, 'commands'));
+      await writeFile(join(pluginPath, 'commands', 'test.md'), '# Command');
+
+      await mkdir(join(pluginPath, 'rules'));
+      await writeFile(join(pluginPath, 'rules', 'test.md'), '# Rule');
+
+      await mkdir(join(pluginPath, 'agents'));
+      await writeFile(join(pluginPath, 'agents', 'test.md'), '# Agent');
+
+      await mkdir(join(pluginPath, 'skills'));
+      await writeFile(join(pluginPath, 'skills', 'test.md'), '# Skill');
+
+      await mkdir(join(pluginPath, 'hooks'));
+      await writeFile(join(pluginPath, 'hooks', 'test.md'), '# Hook');
+    }
+
+    test('disables cursor integration when enabled: false', async () => {
+      await createPluginWithTypes('test-plugin');
+      await marketplaceAdd({
+        name: 'local',
+        path: './marketplace',
+        cwd: testDir,
+      });
+      await pluginEnable({
+        pluginId: 'test-plugin@local',
+        cwd: testDir,
+      });
+
+      // Disable cursor integration
+      const configPath = join(testDir, '.aipm', 'config.json');
+      const config = await Bun.file(configPath).json();
+      config.integrations = { cursor: { enabled: false } };
+      await Bun.write(configPath, JSON.stringify(config, null, 2));
+
+      await sync({ cwd: testDir });
+
+      // Nothing should be synced
+      expect(await fileExists(join(testDir, '.cursor', 'commands', 'local', 'test-plugin', 'test.md'))).toBe(false);
+      expect(await fileExists(join(testDir, '.cursor', 'rules', 'local', 'test-plugin', 'test.mdc'))).toBe(false);
+    });
+
+    test('syncs all types when include is "all"', async () => {
+      await createPluginWithTypes('test-plugin');
+      await marketplaceAdd({
+        name: 'local',
+        path: './marketplace',
+        cwd: testDir,
+      });
+      await pluginEnable({
+        pluginId: 'test-plugin@local',
+        cwd: testDir,
+      });
+
+      // Explicitly set include to "all"
+      const configPath = join(testDir, '.aipm', 'config.json');
+      const config = await Bun.file(configPath).json();
+      config.integrations = { cursor: { enabled: true, include: 'all' } };
+      await Bun.write(configPath, JSON.stringify(config, null, 2));
+
+      await sync({ cwd: testDir });
+
+      // All types should be synced
+      expect(await fileExists(join(testDir, '.cursor', 'commands', 'local', 'test-plugin', 'test.md'))).toBe(true);
+      expect(await fileExists(join(testDir, '.cursor', 'rules', 'local', 'test-plugin', 'test.mdc'))).toBe(true);
+      expect(await fileExists(join(testDir, '.cursor', 'agents', 'local', 'test-plugin', 'test.md'))).toBe(true);
+      expect(await fileExists(join(testDir, '.cursor', 'skills', 'local', 'test-plugin', 'test.md'))).toBe(true);
+      expect(await fileExists(join(testDir, '.cursor', 'hooks', 'local', 'test-plugin', 'test.md'))).toBe(true);
+    });
+
+    test('syncs only enabled types when include is object', async () => {
+      await createPluginWithTypes('test-plugin');
+      await marketplaceAdd({
+        name: 'local',
+        path: './marketplace',
+        cwd: testDir,
+      });
+      await pluginEnable({
+        pluginId: 'test-plugin@local',
+        cwd: testDir,
+      });
+
+      // Only enable rules and commands
+      const configPath = join(testDir, '.aipm', 'config.json');
+      const config = await Bun.file(configPath).json();
+      config.integrations = {
+        cursor: {
+          enabled: true,
+          include: {
+            rules: true,
+            commands: true,
+            agents: false,
+            skills: false,
+            hooks: false,
+          },
+        },
+      };
+      await Bun.write(configPath, JSON.stringify(config, null, 2));
+
+      await sync({ cwd: testDir });
+
+      // Only rules and commands should be synced
+      expect(await fileExists(join(testDir, '.cursor', 'commands', 'local', 'test-plugin', 'test.md'))).toBe(true);
+      expect(await fileExists(join(testDir, '.cursor', 'rules', 'local', 'test-plugin', 'test.mdc'))).toBe(true);
+      expect(await fileExists(join(testDir, '.cursor', 'agents', 'local', 'test-plugin'))).toBe(false);
+      expect(await fileExists(join(testDir, '.cursor', 'skills', 'local', 'test-plugin'))).toBe(false);
+      expect(await fileExists(join(testDir, '.cursor', 'hooks', 'local', 'test-plugin'))).toBe(false);
+    });
+
+    test('defaults to true for unspecified types in include object', async () => {
+      await createPluginWithTypes('test-plugin');
+      await marketplaceAdd({
+        name: 'local',
+        path: './marketplace',
+        cwd: testDir,
+      });
+      await pluginEnable({
+        pluginId: 'test-plugin@local',
+        cwd: testDir,
+      });
+
+      // Only disable agents, leave others unspecified
+      const configPath = join(testDir, '.aipm', 'config.json');
+      const config = await Bun.file(configPath).json();
+      config.integrations = {
+        cursor: {
+          enabled: true,
+          include: {
+            agents: false,
+          },
+        },
+      };
+      await Bun.write(configPath, JSON.stringify(config, null, 2));
+
+      await sync({ cwd: testDir });
+
+      // Everything except agents should be synced (default to true)
+      expect(await fileExists(join(testDir, '.cursor', 'commands', 'local', 'test-plugin', 'test.md'))).toBe(true);
+      expect(await fileExists(join(testDir, '.cursor', 'rules', 'local', 'test-plugin', 'test.mdc'))).toBe(true);
+      expect(await fileExists(join(testDir, '.cursor', 'skills', 'local', 'test-plugin', 'test.md'))).toBe(true);
+      expect(await fileExists(join(testDir, '.cursor', 'hooks', 'local', 'test-plugin', 'test.md'))).toBe(true);
+      expect(await fileExists(join(testDir, '.cursor', 'agents', 'local', 'test-plugin'))).toBe(false);
+    });
+
+    test('syncs all types by default when no integrations config', async () => {
+      await createPluginWithTypes('test-plugin');
+      await marketplaceAdd({
+        name: 'local',
+        path: './marketplace',
+        cwd: testDir,
+      });
+      await pluginEnable({
+        pluginId: 'test-plugin@local',
+        cwd: testDir,
+      });
+
+      // No integrations config - should default to all
+      await sync({ cwd: testDir });
+
+      // All types should be synced
+      expect(await fileExists(join(testDir, '.cursor', 'commands', 'local', 'test-plugin', 'test.md'))).toBe(true);
+      expect(await fileExists(join(testDir, '.cursor', 'rules', 'local', 'test-plugin', 'test.mdc'))).toBe(true);
+      expect(await fileExists(join(testDir, '.cursor', 'agents', 'local', 'test-plugin', 'test.md'))).toBe(true);
+      expect(await fileExists(join(testDir, '.cursor', 'skills', 'local', 'test-plugin', 'test.md'))).toBe(true);
+      expect(await fileExists(join(testDir, '.cursor', 'hooks', 'local', 'test-plugin', 'test.md'))).toBe(true);
     });
   });
 });

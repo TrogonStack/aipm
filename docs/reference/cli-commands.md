@@ -54,9 +54,9 @@ aipm init --global
 
 **Creates**:
 
-- `.cursor/plugins.json` - Project configuration
-- `.cursor/plugins.local.json.example` - Local config template
-- Updates `.gitignore` to ignore `plugins.local.json`
+- `.aipm/config.json` - Project configuration
+- `.aipm/config.local.json.example` - Local config template
+- Updates `.gitignore` to ignore `config.local.json`
 
 **Exit codes**:
 
@@ -134,7 +134,7 @@ aipm marketplace add <name> <source> [options]
 **Options**:
 | Option | Short | Type | Description |
 |--------|-------|------|-------------|
-| `--local` | `-l` | boolean | Save to plugins.local.json |
+| `--local` | `-l` | boolean | Save to config.local.json |
 | `--dry-run` | `-d` | boolean | Show what would be added |
 
 **Examples**:
@@ -144,7 +144,7 @@ aipm marketplace add <name> <source> [options]
 aipm marketplace add team-plugins acme/plugins
 
 # Add Git repository
-aipm marketplace add tools https://github.com/tools/cursor-plugins.git
+aipm marketplace add tools https://github.com/tools/ai-plugins.git
 
 # Add local marketplace
 aipm marketplace add local ./my-plugins
@@ -181,7 +181,7 @@ aipm marketplace remove <name> [options]
 **Options**:
 | Option | Short | Type | Description |
 |--------|-------|------|-------------|
-| `--local` | `-l` | boolean | Remove from plugins.local.json |
+| `--local` | `-l` | boolean | Remove from config.local.json |
 | `--dry-run` | `-d` | boolean | Show what would be removed |
 
 **Examples**:
@@ -312,7 +312,7 @@ aipm plugin install <pluginId> [options]
 **Options**:
 | Option | Short | Type | Description |
 |--------|-------|------|-------------|
-| `--local` | `-l` | boolean | Save to plugins.local.json |
+| `--local` | `-l` | boolean | Save to config.local.json |
 | `--force` | `-f` | boolean | Reinstall if already installed |
 | `--dry-run` | `-d` | boolean | Show what would be installed |
 
@@ -365,7 +365,7 @@ aipm plugin uninstall <pluginId> [options]
 | Option | Short | Type | Description |
 |--------|-------|------|-------------|
 | `--remove-files` | | boolean | Delete plugin files from filesystem |
-| `--local` | `-l` | boolean | Remove from plugins.local.json |
+| `--local` | `-l` | boolean | Remove from config.local.json |
 | `--dry-run` | `-d` | boolean | Show what would be uninstalled |
 
 **Examples**:
@@ -406,7 +406,7 @@ aipm plugin enable <pluginId> [options]
 **Options**:
 | Option | Short | Type | Description |
 |--------|-------|------|-------------|
-| `--local` | `-l` | boolean | Enable in plugins.local.json |
+| `--local` | `-l` | boolean | Enable in config.local.json |
 | `--dry-run` | `-d` | boolean | Show what would be enabled |
 
 **Examples**:
@@ -444,7 +444,7 @@ aipm plugin disable <pluginId> [options]
 **Options**:
 | Option | Short | Type | Description |
 |--------|-------|------|-------------|
-| `--local` | `-l` | boolean | Disable in plugins.local.json |
+| `--local` | `-l` | boolean | Disable in config.local.json |
 | `--dry-run` | `-d` | boolean | Show what would be disabled |
 
 **Examples**:

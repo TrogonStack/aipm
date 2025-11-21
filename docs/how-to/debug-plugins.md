@@ -139,22 +139,22 @@ aipm sync
 1. **Validate JSON**:
 
    ```bash
-   cat .cursor/plugins.json | jq .
+   cat .aipm/config.json | jq .
    # If error, fix the JSON syntax
    ```
 
 2. **Backup and reinitialize**:
 
    ```bash
-   mv .cursor/plugins.json .cursor/plugins.json.backup
+   mv .aipm/config.json .aipm/config.json.backup
    aipm init
    # Then manually merge your config back
    ```
 
 3. **Check file permissions**:
    ```bash
-   ls -la .cursor/plugins.json
-   chmod 644 .cursor/plugins.json
+   ls -la .aipm/config.json
+   chmod 644 .aipm/config.json
    ```
 
 ---
@@ -168,13 +168,13 @@ aipm sync
 1. **Check disk space**:
 
    ```bash
-   df -h ~/.cursor/marketplace/cache/
+   df -h ~/.aipm/cache/
    ```
 
 2. **Clear cache and retry**:
 
    ```bash
-   rm -rf ~/.cursor/marketplace/cache/my-marketplace
+   rm -rf ~/.aipm/cache/my-marketplace
    aipm marketplace update my-marketplace
    ```
 
@@ -201,9 +201,9 @@ aipm sync
 2. **Check file ownership**:
 
    ```bash
-   ls -la .cursor/plugins.json
+   ls -la .aipm/config.json
    # If owned by root, fix it:
-   sudo chown $USER:$USER .cursor/plugins.json
+   sudo chown $USER:$USER .aipm/config.json
    ```
 
 3. **Don't use sudo**:
@@ -255,10 +255,10 @@ aipm sync --dry-run
 
 ```bash
 # Check git cache
-ls -la ~/.cursor/marketplace/cache/
+ls -la ~/.aipm/cache/
 
 # Check specific marketplace cache
-ls -la ~/.cursor/marketplace/cache/my-marketplace/
+ls -la ~/.aipm/cache/my-marketplace/
 ```
 
 ### Check Synced Files
@@ -278,7 +278,7 @@ find .cursor/marketplace/ -name "*.md"
 cat .cursor/marketplace/my-marketplace/my-plugin/.claude-plugin/plugin.json | jq .
 
 # Check marketplace.json is valid
-cat ~/.cursor/marketplace/cache/my-marketplace/marketplace.json | jq .
+cat ~/.aipm/cache/my-marketplace/marketplace.json | jq .
 ```
 
 ---
@@ -301,7 +301,7 @@ If you're still stuck:
    ls -la .cursor/
 
    # Global logs
-   ls -la ~/.cursor/
+   ls -la ~/.aipm/
    ```
 
 3. **Create minimal reproduction**:
@@ -340,13 +340,13 @@ If you're still stuck:
 2. **Backup configs**:
 
    ```bash
-   cp .cursor/plugins.json .cursor/plugins.json.backup
+   cp .aipm/config.json .aipm/config.json.backup
    ```
 
 3. **Version control configs**:
 
    ```bash
-   git add .cursor/plugins.json
+   git add .aipm/config.json
    git commit -m "chore: update plugin config"
    ```
 

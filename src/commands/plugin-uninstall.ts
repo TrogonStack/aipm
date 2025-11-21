@@ -1,11 +1,11 @@
 import { rm } from 'node:fs/promises';
 import { join } from 'node:path';
 import { z } from 'zod';
-import { getConfigPaths, loadPluginsConfig } from '../config/loader';
-import { DIR_CURSOR, DIR_MARKETPLACE } from '../constants';
-import { fileExists, writeJsonFile } from '../helpers/fs';
+import { getConfigPath, getNotInitializedMessage, loadPluginsConfig } from '../config/loader';
+import { DIR_CURSOR, DIR_MARKETPLACE, FILE_AIPM_CONFIG, FILE_AIPM_CONFIG_LOCAL } from '../constants';
+import { saveConfig } from '../helpers/aipm-config';
+import { fileExists } from '../helpers/fs';
 import { defaultIO } from '../helpers/io';
-import { PluginsConfigSchema } from '../schema';
 
 const PluginUninstallOptionsSchema = z.object({
   pluginId: z.string().min(1),
@@ -19,19 +19,16 @@ export async function pluginUninstall(options: unknown): Promise<void> {
   const cmd = PluginUninstallOptionsSchema.parse(options);
 
   const cwd = cmd.cwd || process.cwd();
-  const paths = getConfigPaths(cwd);
 
   try {
-    const targetPath = cmd.local ? paths.pluginsLocal : paths.plugins;
-    const configName = cmd.local ? '.cursor/plugins.local.json' : '.cursor/plugins.json';
+    const { config, sources } = await loadPluginsConfig(cwd);
 
-    if (!(await fileExists(paths.plugins))) {
-      const error = new Error("No plugins.json found. Run 'aipm init' first.");
+    if (!sources.project && !sources.local) {
+      const error = new Error(getNotInitializedMessage());
       defaultIO.logError(error.message);
       throw error;
     }
-
-    const { config } = await loadPluginsConfig(cwd);
+    const configName = cmd.local ? getConfigPath(FILE_AIPM_CONFIG_LOCAL) : getConfigPath(FILE_AIPM_CONFIG);
 
     if (!config.plugins[cmd.pluginId]) {
       const error = new Error(`Plugin '${cmd.pluginId}' is not installed`);
@@ -52,7 +49,7 @@ export async function pluginUninstall(options: unknown): Promise<void> {
         defaultIO.logInfo('[DRY RUN] Would delete files from .cursor/marketplace/');
       }
     } else {
-      await writeJsonFile(targetPath, updatedConfig, PluginsConfigSchema);
+      await saveConfig(cwd, updatedConfig, cmd.local);
       defaultIO.logSuccess(`Removed plugin '${cmd.pluginId}' from ${configName}`);
 
       if (cmd.removeFiles) {

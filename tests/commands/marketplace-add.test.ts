@@ -143,7 +143,7 @@ describe('marketplace add', () => {
     });
 
     test('dry-run with local flag does not create local config', async () => {
-      const localPath = join(testDir, '.cursor', 'plugins.local.json');
+      const localPath = join(testDir, '.aipm', 'config.local.json');
 
       await marketplaceAdd({
         name: 'local-test',
@@ -178,7 +178,7 @@ describe('marketplace add', () => {
     });
 
     test('preserves existing plugins when adding marketplace', async () => {
-      const pluginsPath = join(testDir, '.cursor', 'plugins.json');
+      const pluginsPath = join(testDir, '.aipm', 'config.json');
       const initialConfig = await Bun.file(pluginsPath).json();
       initialConfig.plugins = {
         'test-plugin@marketplace': {

@@ -128,7 +128,7 @@ describe('info command', () => {
     });
 
     test('handles marketplace with missing url', async () => {
-      const pluginsPath = join(testDir, '.cursor', 'plugins.json');
+      const pluginsPath = join(testDir, '.aipm', 'config.json');
       const config = await Bun.file(pluginsPath).json();
       config.marketplaces['no-url'] = {
         source: 'git',
@@ -139,7 +139,7 @@ describe('info command', () => {
     });
 
     test('handles marketplace with missing path', async () => {
-      const pluginsPath = join(testDir, '.cursor', 'plugins.json');
+      const pluginsPath = join(testDir, '.aipm', 'config.json');
       const config = await Bun.file(pluginsPath).json();
       config.marketplaces['no-path'] = {
         source: 'directory',
@@ -221,7 +221,7 @@ describe('info command', () => {
         cwd: testDir,
       });
 
-      const pluginsPath = join(testDir, '.cursor', 'plugins.json');
+      const pluginsPath = join(testDir, '.aipm', 'config.json');
       const config = await Bun.file(pluginsPath).json();
       config.plugins['scoped-plugin@local'] = {
         enabled: true,

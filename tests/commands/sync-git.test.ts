@@ -60,7 +60,7 @@ describe('sync command with git sources', () => {
   test('syncs plugin from git marketplace', async () => {
     await createGitRepo(['git-plugin']);
 
-    const configPath = join(testDir, '.cursor', 'plugins.json');
+    const configPath = join(testDir, '.aipm', 'config.json');
     const config = JSON.parse(await Bun.file(configPath).text());
 
     config.marketplaces.git = {
@@ -82,7 +82,7 @@ describe('sync command with git sources', () => {
   test('syncs multiple plugins from git marketplace', async () => {
     await createGitRepo(['plugin-a', 'plugin-b', 'plugin-c']);
 
-    const configPath = join(testDir, '.cursor', 'plugins.json');
+    const configPath = join(testDir, '.aipm', 'config.json');
     const config = JSON.parse(await Bun.file(configPath).text());
 
     config.marketplaces.git = {
@@ -105,7 +105,7 @@ describe('sync command with git sources', () => {
   test('pulls updates from git marketplace on subsequent syncs', async () => {
     await createGitRepo(['update-plugin']);
 
-    const configPath = join(testDir, '.cursor', 'plugins.json');
+    const configPath = join(testDir, '.aipm', 'config.json');
     const config = JSON.parse(await Bun.file(configPath).text());
 
     config.marketplaces.git = {
@@ -143,7 +143,7 @@ describe('sync command with git sources', () => {
       cwd: gitRepoDir,
     });
 
-    const configPath = join(testDir, '.cursor', 'plugins.json');
+    const configPath = join(testDir, '.aipm', 'config.json');
     const config = JSON.parse(await Bun.file(configPath).text());
 
     config.marketplaces.git = {
@@ -178,7 +178,7 @@ describe('sync command with git sources', () => {
     await mkdir(join(localMarketplace, 'local-plugin', 'commands'));
     await writeFile(join(localMarketplace, 'local-plugin', 'commands', 'local-test.md'), '# Local Test Command');
 
-    const configPath = join(testDir, '.cursor', 'plugins.json');
+    const configPath = join(testDir, '.aipm', 'config.json');
     const config = JSON.parse(await Bun.file(configPath).text());
 
     config.marketplaces.git = {
@@ -201,7 +201,7 @@ describe('sync command with git sources', () => {
   });
 
   test('handles git marketplace without url gracefully', async () => {
-    const configPath = join(testDir, '.cursor', 'plugins.json');
+    const configPath = join(testDir, '.aipm', 'config.json');
     const config = JSON.parse(await Bun.file(configPath).text());
 
     config.marketplaces.broken = {
@@ -219,7 +219,7 @@ describe('sync command with git sources', () => {
   test("dry-run mode doesn't clone git repos", async () => {
     await createGitRepo(['dry-plugin']);
 
-    const configPath = join(testDir, '.cursor', 'plugins.json');
+    const configPath = join(testDir, '.aipm', 'config.json');
     const config = JSON.parse(await Bun.file(configPath).text());
 
     config.marketplaces.git = {

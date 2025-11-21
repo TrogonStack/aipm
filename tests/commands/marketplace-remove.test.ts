@@ -92,7 +92,7 @@ describe('marketplace remove', () => {
         cwd: testDir,
       });
 
-      const pluginsPath = join(testDir, '.cursor', 'plugins.json');
+      const pluginsPath = join(testDir, '.aipm', 'config.json');
       const config = await Bun.file(pluginsPath).json();
       config.plugins = {
         'test-plugin@marketplace': {

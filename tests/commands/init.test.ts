@@ -17,10 +17,10 @@ describe('aipm init', () => {
     await rm(testDir, { recursive: true, force: true });
   });
 
-  test('creates .cursor/plugins.json with default structure', async () => {
+  test('creates .aipm/config.json with default structure', async () => {
     await init({ cwd: testDir });
 
-    const pluginsPath = join(testDir, '.cursor', 'plugins.json');
+    const pluginsPath = join(testDir, '.aipm', 'config.json');
     expect(await fileExists(pluginsPath)).toBe(true);
 
     const file = Bun.file(pluginsPath);
@@ -32,10 +32,10 @@ describe('aipm init', () => {
     expect(config.plugins).toEqual({});
   });
 
-  test('creates .cursor/plugins.local.json.example', async () => {
+  test('creates .aipm/config.local.json.example', async () => {
     await init({ cwd: testDir });
 
-    const examplePath = join(testDir, '.cursor', 'plugins.local.json.example');
+    const examplePath = join(testDir, '.aipm', 'config.local.json.example');
     expect(await fileExists(examplePath)).toBe(true);
 
     const file = Bun.file(examplePath);
@@ -44,17 +44,16 @@ describe('aipm init', () => {
     expect(config).toHaveProperty('plugins');
   });
 
-  test('creates .cursor directory if it does not exist', async () => {
+  test('creates .aipm directory if it does not exist', async () => {
     await init({ cwd: testDir });
 
-    const cursorDir = join(testDir, '.cursor');
-    expect(await fileExists(cursorDir)).toBe(true);
+    const aipmDir = join(testDir, '.aipm');
+    expect(await fileExists(aipmDir)).toBe(true);
   });
-
   test('does not overwrite existing config without --force', async () => {
     await init({ cwd: testDir });
 
-    const pluginsPath = join(testDir, '.cursor', 'plugins.json');
+    const pluginsPath = join(testDir, '.aipm', 'config.json');
     const originalContent = await Bun.file(pluginsPath).text();
 
     await init({ cwd: testDir });
@@ -66,7 +65,7 @@ describe('aipm init', () => {
   test('includes examples with --example flag', async () => {
     await init({ cwd: testDir, example: true });
 
-    const pluginsPath = join(testDir, '.cursor', 'plugins.json');
+    const pluginsPath = join(testDir, '.aipm', 'config.json');
     const file = Bun.file(pluginsPath);
     const config = await file.json();
 
@@ -81,7 +80,7 @@ describe('aipm init', () => {
     await init({ cwd: testDir });
 
     const content = await Bun.file(gitignorePath).text();
-    expect(content).toContain('.cursor/plugins.local.json');
+    expect(content).toContain('.aipm/config.local.json');
   });
 
   test('does not create .gitignore if it does not exist', async () => {
@@ -91,6 +90,38 @@ describe('aipm init', () => {
 
     const exists = await fileExists(gitignorePath);
     expect(exists).toBe(false);
+  });
+
+  test('adds relative path to .gitignore when initialized in subdirectory', async () => {
+    // Initialize git repo
+    await Bun.spawn(['git', 'init'], { cwd: testDir, stdout: 'ignore', stderr: 'ignore' }).exited;
+    await Bun.spawn(['git', 'config', 'user.email', 'test@test.com'], {
+      cwd: testDir,
+      stdout: 'ignore',
+      stderr: 'ignore',
+    }).exited;
+    await Bun.spawn(['git', 'config', 'user.name', 'Test'], {
+      cwd: testDir,
+      stdout: 'ignore',
+      stderr: 'ignore',
+    }).exited;
+
+    // Create .gitignore at root
+    const gitignorePath = join(testDir, '.gitignore');
+    await Bun.write(gitignorePath, 'node_modules/\n');
+
+    // Create subdirectory
+    const subdir = join(testDir, 'packages', 'app');
+    await Bun.spawn(['mkdir', '-p', subdir], { stdout: 'ignore' }).exited;
+
+    // Initialize aipm in subdirectory
+    await init({ cwd: subdir });
+
+    // Check that .gitignore at root has relative path
+    const content = await Bun.file(gitignorePath).text();
+    expect(content).toContain('packages/app/.aipm/config.local.json');
+    // Should not have the entry without the subdirectory prefix
+    expect(content.split('\n').filter((line) => line === '.aipm/config.local.json')).toHaveLength(0);
   });
 
   test('creates global config with --global flag', async () => {
@@ -121,7 +152,7 @@ describe('aipm init', () => {
   test('creates backup when using --force on existing config', async () => {
     await init({ cwd: testDir });
 
-    const pluginsPath = join(testDir, '.cursor', 'plugins.json');
+    const pluginsPath = join(testDir, '.aipm', 'config.json');
     const backupPath = `${pluginsPath}.backup`;
 
     await init({ cwd: testDir, force: true, skipConfirm: true });
@@ -147,7 +178,7 @@ describe('aipm init', () => {
 
     await init({ cwd: testDir, io });
 
-    const pluginsPath = join(testDir, '.cursor', 'plugins.json');
+    const pluginsPath = join(testDir, '.aipm', 'config.json');
     const originalContent = await Bun.file(pluginsPath).text();
 
     await init({ cwd: testDir, force: true, io });

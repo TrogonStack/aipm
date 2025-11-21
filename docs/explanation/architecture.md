@@ -104,9 +104,9 @@ export async function commandName(options: Options) {
 ```typescript
 // Priority: local > project > global
 const config = mergeConfigs(
-  globalConfig, // ~/.cursor/config.json
-  projectConfig, // .cursor/plugins.json
-  localConfig, // .cursor/plugins.local.json (gitignored)
+  globalConfig, // ~/.aipm/config.json
+  projectConfig, // .aipm/config.json
+  localConfig, // .aipm/config.local.json (gitignored)
 );
 ```
 
@@ -172,7 +172,7 @@ User: aipm sync
   ?
 2. For each enabled plugin:
    a. Resolve marketplace path
-      - Git: Clone to ~/.cursor/marketplace/cache/ (or pull if exists)
+      - Git: Clone to ~/.aipm/cache/ (or pull if exists)
       - Local: Use directory directly
       - URL: Fetch marketplace.json
    b. Find plugin source in marketplace
@@ -189,29 +189,30 @@ User: aipm sync
 
 ```
 User's machine:
-??? ~/.cursor/
-?   ??? config.json                    # Global config
-?   ??? marketplace/
-?       ??? cache/
-?           ??? {marketplace}/         # Git clones
+└ ~/.aipm/
+    ├── config.json                    # Global config
+    └── cache/
+        └── {marketplace}/             # Git marketplace clones
 
 Project:
-??? .cursor/
-?   ??? plugins.json                   # Project config (committed)
-?   ??? plugins.local.json             # Local overrides (gitignored)
-?   ??? marketplace/
-?       ??? {marketplace}/
-?           ??? {plugin}/              # Synced plugins
+└ .aipm/
+    ├── config.json                    # Project config (committed)
+    └── config.local.json              # Local overrides (gitignored)
+
+└ .cursor/                              # Synced plugin content
+    └── marketplace/
+        └── {marketplace}/
+            └── {plugin}/              # Plugin files
 ```
 
 ### Config Priority
 
 ```
-Local (.cursor/plugins.local.json)
+Local (.aipm/config.local.json)
   ? overrides
-Project (.cursor/plugins.json)
+Project (.aipm/config.json)
   ? overrides
-Global (~/.cursor/config.json)
+Global (~/.aipm/config.json)
 ```
 
 See [Configuration System](./config-system.md) for details.
@@ -237,7 +238,7 @@ Scan directory for plugins
 ```
 marketplace: { source: "git", url: "https://github.com/user/plugins.git" }
   ?
-Clone to ~/.cursor/marketplace/cache/{marketplace-name}/
+Clone to ~/.aipm/cache/{marketplace-name}/
   (or pull if already exists)
   ?
 Read marketplace.json from clone
@@ -252,7 +253,7 @@ marketplace: { source: "url", url: "https://cdn.com/marketplace.json" }
   ?
 Fetch marketplace.json
   ?
-Cache to ~/.cursor/marketplace/cache/{marketplace-name}/
+Cache to ~/.aipm/cache/{marketplace-name}/
   ?
 Parse plugin list
 ```
@@ -398,7 +399,7 @@ aipm is designed to be extended:
 ### Git Operations
 
 - **Shallow clones**: Uses `--depth 1` for faster clones
-- **Caching**: Git repos cached in `~/.cursor/marketplace/cache/`
+- **Caching**: Git repos cached in `~/.aipm/cache/`
 - **Lazy updates**: Only pulls when `marketplace update` called
 
 ### File Operations
@@ -431,7 +432,7 @@ aipm is designed to be extended:
 
 ### Configuration
 
-- **Local overrides**: Secrets go in `.cursor/plugins.local.json` (gitignored)
+- **Local overrides**: Secrets go in `.aipm/config.local.json` (gitignored)
 - **Validation**: All configs validated with Zod schemas
 - **No eval**: No dynamic code execution
 

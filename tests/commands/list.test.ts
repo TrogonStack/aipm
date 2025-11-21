@@ -90,7 +90,7 @@ describe('list command', () => {
     });
 
     test('lists configured plugins', async () => {
-      const pluginsPath = join(testDir, '.cursor', 'plugins.json');
+      const pluginsPath = join(testDir, '.aipm', 'config.json');
       const config = await Bun.file(pluginsPath).json();
       config.plugins = {
         'test-plugin@marketplace': {
@@ -120,7 +120,7 @@ describe('list command', () => {
     });
 
     test('shows disabled plugins', async () => {
-      const pluginsPath = join(testDir, '.cursor', 'plugins.json');
+      const pluginsPath = join(testDir, '.aipm', 'config.json');
       const config = await Bun.file(pluginsPath).json();
       config.plugins = {
         'disabled-plugin@marketplace': {
@@ -147,7 +147,7 @@ describe('list command', () => {
 
   describe('different marketplace sources', () => {
     test('displays git marketplace source', async () => {
-      const pluginsPath = join(testDir, '.cursor', 'plugins.json');
+      const pluginsPath = join(testDir, '.aipm', 'config.json');
       const config = await Bun.file(pluginsPath).json();
       config.marketplaces = {
         'git-marketplace': {

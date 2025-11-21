@@ -4,7 +4,7 @@ A hands-on tutorial to get you started with aipm in 15 minutes. Works with both 
 
 ## Prerequisites
 
-- `aipm` installed ([Installation Guide](../../INSTALLATION.md))
+- `aipm` installed ([Installation Guide](../how-to/installation.md))
 - A project directory (we'll create one for testing)
 - Either Cursor or Claude Code (aipm auto-detects which one you're using)
 
@@ -40,7 +40,7 @@ git init
 aipm init
 
 # Verify config was created
-cat .cursor/plugins.json
+cat .aipm/config.json
 ```
 
 Now create a simple plugin:
@@ -87,7 +87,7 @@ Add your local plugin directory as a marketplace:
 aipm marketplace add my-marketplace ./my-plugins
 
 # Verify the marketplace was added
-cat .cursor/plugins.json
+cat .aipm/config.json
 ```
 
 Your config should now include the marketplace reference.
@@ -218,7 +218,7 @@ npm install -g @trogonstack/aipm
 If plugins don't appear after sync:
 
 1. Check the plugin manifest exists: `my-plugins/plugin-name/.claude-plugin/plugin.json`
-2. Verify the marketplace path is correct in `.cursor/plugins.json`
+2. Verify the marketplace path is correct in `.aipm/config.json`
 3. Run `aipm sync` again
 
 ### Git initialization required

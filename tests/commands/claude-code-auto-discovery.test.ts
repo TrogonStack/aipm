@@ -118,7 +118,7 @@ describe('Claude Code Auto-Discovery Integration', () => {
 
     await init({ cwd: testDir, skipConfirm: true });
 
-    const configPath = join(testDir, '.cursor', 'plugins.json');
+    const configPath = join(testDir, '.aipm', 'config.json');
     const aipmConfig = {
       marketplaces: {
         'my-marketplace': {
@@ -162,7 +162,7 @@ describe('Claude Code Auto-Discovery Integration', () => {
 
     await init({ cwd: testDir, skipConfirm: true });
 
-    const configPath = join(testDir, '.cursor', 'plugins.json');
+    const configPath = join(testDir, '.aipm', 'config.json');
     const aipmConfig = {
       marketplaces: {
         'claude:my-marketplace': {

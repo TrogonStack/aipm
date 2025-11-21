@@ -18,7 +18,9 @@ describe('marketplace-update', () => {
 
   describe('basic update', () => {
     test('should skip update for directory marketplace', async () => {
-      const pluginsPath = join(testDir, '.cursor', 'plugins.json');
+      const pluginsPath = join(testDir, '.aipm', 'config.json');
+      const aipmDir = join(testDir, '.aipm');
+      await mkdir(aipmDir, { recursive: true });
       await writeFile(
         pluginsPath,
         JSON.stringify({
@@ -38,7 +40,9 @@ describe('marketplace-update', () => {
     });
 
     test('should error if marketplace not found', async () => {
-      const pluginsPath = join(testDir, '.cursor', 'plugins.json');
+      const pluginsPath = join(testDir, '.aipm', 'config.json');
+      const aipmDir = join(testDir, '.aipm');
+      await mkdir(aipmDir, { recursive: true });
       await writeFile(
         pluginsPath,
         JSON.stringify({
@@ -61,13 +65,15 @@ describe('marketplace-update', () => {
         cwd: testDir,
       };
 
-      await expect(marketplaceUpdate(options)).rejects.toThrow('No plugins.json found');
+      await expect(marketplaceUpdate(options)).rejects.toThrow('No .aipm/config.json or .aipm/config.local.json found');
     });
   });
 
   describe('dry-run mode', () => {
     test('should not update in dry-run mode', async () => {
-      const pluginsPath = join(testDir, '.cursor', 'plugins.json');
+      const pluginsPath = join(testDir, '.aipm', 'config.json');
+      const aipmDir = join(testDir, '.aipm');
+      await mkdir(aipmDir, { recursive: true });
       await writeFile(
         pluginsPath,
         JSON.stringify({

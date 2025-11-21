@@ -1,8 +1,8 @@
 import { z } from 'zod';
-import { getConfigPaths, loadPluginsConfig } from '../config/loader';
-import { fileExists, writeJsonFile } from '../helpers/fs';
+import { getConfigPath, getNotInitializedMessage, loadPluginsConfig } from '../config/loader';
+import { FILE_AIPM_CONFIG, FILE_AIPM_CONFIG_LOCAL } from '../constants';
+import { saveConfig } from '../helpers/aipm-config';
 import { defaultIO } from '../helpers/io';
-import { PluginsConfigSchema } from '../schema';
 
 const PluginDisableOptionsSchema = z.object({
   pluginId: z.string().min(1),
@@ -15,18 +15,15 @@ export async function pluginDisable(options: unknown): Promise<void> {
   const cmd = PluginDisableOptionsSchema.parse(options);
 
   const cwd = cmd.cwd || process.cwd();
-  const paths = getConfigPaths(cwd);
 
   try {
-    const targetPath = cmd.local ? paths.pluginsLocal : paths.plugins;
-    const configName = cmd.local ? '.cursor/plugins.local.json' : '.cursor/plugins.json';
+    const { config, sources } = await loadPluginsConfig(cwd);
 
-    if (!(await fileExists(paths.plugins))) {
-      defaultIO.logError("No plugins.json found. Run 'aipm init' first.");
+    if (!sources.project && !sources.local) {
+      defaultIO.logError(getNotInitializedMessage());
       return;
     }
-
-    const { config } = await loadPluginsConfig(cwd);
+    const configName = cmd.local ? getConfigPath(FILE_AIPM_CONFIG_LOCAL) : getConfigPath(FILE_AIPM_CONFIG);
 
     const plugin = config.plugins[cmd.pluginId];
 
@@ -54,7 +51,7 @@ export async function pluginDisable(options: unknown): Promise<void> {
     if (cmd.dryRun) {
       defaultIO.logInfo(`[DRY RUN] Would disable plugin '${cmd.pluginId}' in ${configName}`);
     } else {
-      await writeJsonFile(targetPath, updatedConfig, PluginsConfigSchema, cmd.dryRun);
+      await saveConfig(cwd, updatedConfig, cmd.local);
       defaultIO.logSuccess(`Disabled plugin '${cmd.pluginId}' in ${configName}`);
     }
   } catch (error: unknown) {
