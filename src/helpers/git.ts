@@ -1,11 +1,35 @@
 import { rm, writeFile } from 'node:fs/promises';
 import * as path from 'node:path';
 import { join } from 'node:path';
-import { DIR_CACHE } from '../constants';
 import type { MarketplaceSource } from '../schema';
 import { ensureDir, fileExists } from './fs';
 import { fetchRemoteMarketplaceManifest } from './marketplace';
-import { getGlobalDir } from './paths';
+import { getGlobalCacheDir, getGlobalDir } from './paths';
+
+/**
+ * Find the git repository root directory starting from the given directory
+ * @param startDir Directory to start searching from
+ * @returns Git root directory path, or null if not in a git repository
+ */
+export async function findGitRoot(startDir: string): Promise<string | null> {
+  try {
+    const proc = Bun.spawn(['git', 'rev-parse', '--show-toplevel'], {
+      cwd: startDir,
+      stdout: 'pipe',
+      stderr: 'pipe',
+    });
+
+    const text = await new Response(proc.stdout).text();
+    const exitCode = await proc.exited;
+
+    if (exitCode === 0) {
+      return text.trim();
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
 
 export async function resolveMarketplacePath(
   marketplaceName: string,
@@ -31,8 +55,9 @@ export async function resolveMarketplacePath(
         return null;
       }
 
-      const globalDir = getGlobalDir();
-      const cacheDir = join(globalDir, DIR_CACHE, marketplaceName);
+      // Use global cache: ~/.aipm/cache/{marketplace-name}/
+      const globalCacheDir = getGlobalCacheDir();
+      const cacheDir = join(globalCacheDir, marketplaceName);
 
       if (options.dryRun) {
         return cacheDir;
@@ -126,8 +151,7 @@ async function gitPull(repoDir: string, url: string, branch?: string): Promise<v
 }
 
 export async function clearMarketplaceCache(marketplaceName?: string): Promise<void> {
-  const globalDir = getGlobalDir();
-  const cacheDir = join(globalDir, 'cache');
+  const cacheDir = getGlobalCacheDir();
 
   if (marketplaceName) {
     const marketplaceCacheDir = join(cacheDir, marketplaceName);

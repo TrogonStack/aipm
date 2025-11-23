@@ -1,8 +1,9 @@
 import { join } from 'node:path';
 import { z } from 'zod';
-import { getConfigPaths, loadPluginsConfig } from '../config/loader';
-import { DIR_CURSOR } from '../constants';
-import { fileExists, writeJsonFile } from '../helpers/fs';
+import { getConfigPath, getNotInitializedMessage, loadPluginsConfig } from '../config/loader';
+import { DIR_CURSOR, FILE_AIPM_CONFIG, FILE_AIPM_CONFIG_LOCAL } from '../constants';
+import { saveConfig } from '../helpers/aipm-config';
+import { fileExists } from '../helpers/fs';
 import { resolveMarketplacePath } from '../helpers/git';
 import { defaultIO } from '../helpers/io';
 import {
@@ -13,7 +14,6 @@ import {
 } from '../helpers/marketplace';
 import { validatePluginStructure } from '../helpers/plugin';
 import { formatSyncResult, syncPluginToCursor } from '../helpers/sync-strategy';
-import { PluginsConfigSchema } from '../schema';
 
 const PluginInstallOptionsSchema = z.object({
   pluginId: z.string().min(1),
@@ -27,19 +27,16 @@ export async function pluginInstall(options: unknown): Promise<void> {
   const cmd = PluginInstallOptionsSchema.parse(options);
 
   const cwd = cmd.cwd || process.cwd();
-  const paths = getConfigPaths(cwd);
 
   try {
-    const targetPath = cmd.local ? paths.pluginsLocal : paths.plugins;
-    const configName = cmd.local ? '.cursor/plugins.local.json' : '.cursor/plugins.json';
+    const { config, sources } = await loadPluginsConfig(cwd);
 
-    if (!(await fileExists(paths.plugins))) {
-      const error = new Error("No plugins.json found. Run 'aipm init' first.");
+    if (!sources.project && !sources.local) {
+      const error = new Error(getNotInitializedMessage());
       defaultIO.logError(error.message);
       throw error;
     }
-
-    const { config } = await loadPluginsConfig(cwd);
+    const configName = cmd.local ? getConfigPath(FILE_AIPM_CONFIG_LOCAL) : getConfigPath(FILE_AIPM_CONFIG);
 
     const [pluginName, marketplaceName] = cmd.pluginId.split('@');
 
@@ -119,7 +116,7 @@ export async function pluginInstall(options: unknown): Promise<void> {
       return;
     }
 
-    await writeJsonFile(targetPath, updatedConfig, PluginsConfigSchema);
+    await saveConfig(cwd, updatedConfig, cmd.local);
     defaultIO.logSuccess(`Enabled plugin '${cmd.pluginId}' in ${configName}`);
 
     const cursorDir = join(cwd, DIR_CURSOR);

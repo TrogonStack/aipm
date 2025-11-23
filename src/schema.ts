@@ -61,14 +61,33 @@ export const PluginConfigSchema = z.object({
   version: z.string().optional(),
 });
 
+export const IntegrationIncludeSchema = z.object({
+  commands: z.boolean().optional(),
+  rules: z.boolean().optional(),
+  agents: z.boolean().optional(),
+  skills: z.boolean().optional(),
+  hooks: z.boolean().optional(),
+});
+
+export const IntegrationConfigSchema = z.object({
+  enabled: z.boolean().optional(),
+  include: z.union([z.literal('all'), IntegrationIncludeSchema]).optional(),
+});
+
+export const IntegrationsSchema = z.object({
+  cursor: IntegrationConfigSchema.optional(),
+});
+
 export const PluginsConfigSchema = z.object({
   marketplaces: z.record(z.string(), MarketplaceSourceSchema),
   plugins: z.record(z.string(), PluginConfigSchema),
+  integrations: IntegrationsSchema.optional(),
 });
 
 export const GlobalMarketplaceConfigSchema = z.object({
   marketplaces: z.record(z.string(), MarketplaceSourceSchema).optional(),
   plugins: z.record(z.string(), PluginConfigSchema).optional(),
+  integrations: IntegrationsSchema.optional(),
 });
 
 export type MarketplaceSource = z.infer<typeof MarketplaceSourceSchema>;

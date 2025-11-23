@@ -1,5 +1,6 @@
 import { z } from 'zod';
-import { loadPluginsConfig } from '../config/loader';
+import { getConfigPath, loadPluginsConfig } from '../config/loader';
+import { FILE_AIPM_CONFIG, FILE_AIPM_CONFIG_LOCAL } from '../constants';
 import { defaultIO } from '../helpers/io';
 
 const ListOptionsSchema = z.object({
@@ -17,7 +18,8 @@ export async function list(options: ListOptions = {}): Promise<void> {
     const { config, sources } = await loadPluginsConfig(cwd);
 
     if (!sources.project) {
-      defaultIO.logError("No plugins.json found. Run 'aipm init' first.");
+      defaultIO.logError(`No ${getConfigPath(FILE_AIPM_CONFIG)} found. Run 'aipm init' first.`);
+      defaultIO.logInfo(`(${getConfigPath(FILE_AIPM_CONFIG_LOCAL)} is optional for local overrides)`);
       return;
     }
 

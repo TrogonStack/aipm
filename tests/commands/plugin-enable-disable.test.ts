@@ -22,7 +22,7 @@ describe('plugin enable/disable', () => {
 
   describe('plugin enable', () => {
     test('enables a disabled plugin', async () => {
-      const pluginsPath = join(testDir, '.cursor', 'plugins.json');
+      const pluginsPath = join(testDir, '.aipm', 'config.json');
       const config = await Bun.file(pluginsPath).json();
       config.plugins = {
         'test-plugin@marketplace': {
@@ -52,7 +52,7 @@ describe('plugin enable/disable', () => {
     });
 
     test('handles already enabled plugin', async () => {
-      const pluginsPath = join(testDir, '.cursor', 'plugins.json');
+      const pluginsPath = join(testDir, '.aipm', 'config.json');
       const config = await Bun.file(pluginsPath).json();
       config.plugins = {
         'enabled-plugin@marketplace': {
@@ -71,7 +71,7 @@ describe('plugin enable/disable', () => {
     });
 
     test('enables plugin in plugins.local.json', async () => {
-      const localPath = join(testDir, '.cursor', 'plugins.local.json');
+      const localPath = join(testDir, '.aipm', 'config.local.json');
       const localConfig = {
         plugins: {
           'local-plugin@marketplace': {
@@ -92,7 +92,7 @@ describe('plugin enable/disable', () => {
     });
 
     test('preserves other plugin properties when enabling', async () => {
-      const pluginsPath = join(testDir, '.cursor', 'plugins.json');
+      const pluginsPath = join(testDir, '.aipm', 'config.json');
       const config = await Bun.file(pluginsPath).json();
       config.plugins = {
         'test-plugin@marketplace': {
@@ -117,7 +117,7 @@ describe('plugin enable/disable', () => {
     });
 
     test('dry-run does not enable plugin', async () => {
-      const pluginsPath = join(testDir, '.cursor', 'plugins.json');
+      const pluginsPath = join(testDir, '.aipm', 'config.json');
       const config = await Bun.file(pluginsPath).json();
       config.plugins = {
         'test-plugin@marketplace': {
@@ -150,7 +150,7 @@ describe('plugin enable/disable', () => {
 
   describe('plugin disable', () => {
     test('disables an enabled plugin', async () => {
-      const pluginsPath = join(testDir, '.cursor', 'plugins.json');
+      const pluginsPath = join(testDir, '.aipm', 'config.json');
       const config = await Bun.file(pluginsPath).json();
       config.plugins = {
         'test-plugin@marketplace': {
@@ -179,7 +179,7 @@ describe('plugin enable/disable', () => {
     });
 
     test('handles already disabled plugin', async () => {
-      const pluginsPath = join(testDir, '.cursor', 'plugins.json');
+      const pluginsPath = join(testDir, '.aipm', 'config.json');
       const config = await Bun.file(pluginsPath).json();
       config.plugins = {
         'disabled-plugin@marketplace': {
@@ -198,7 +198,7 @@ describe('plugin enable/disable', () => {
     });
 
     test('disables plugin in plugins.local.json', async () => {
-      const localPath = join(testDir, '.cursor', 'plugins.local.json');
+      const localPath = join(testDir, '.aipm', 'config.local.json');
       const localConfig = {
         plugins: {
           'local-plugin@marketplace': {
@@ -219,7 +219,7 @@ describe('plugin enable/disable', () => {
     });
 
     test('preserves other plugin properties when disabling', async () => {
-      const pluginsPath = join(testDir, '.cursor', 'plugins.json');
+      const pluginsPath = join(testDir, '.aipm', 'config.json');
       const config = await Bun.file(pluginsPath).json();
       config.plugins = {
         'test-plugin@marketplace': {
@@ -244,7 +244,7 @@ describe('plugin enable/disable', () => {
     });
 
     test('dry-run does not disable plugin', async () => {
-      const pluginsPath = join(testDir, '.cursor', 'plugins.json');
+      const pluginsPath = join(testDir, '.aipm', 'config.json');
       const config = await Bun.file(pluginsPath).json();
       config.plugins = {
         'test-plugin@marketplace': {

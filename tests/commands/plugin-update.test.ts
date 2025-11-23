@@ -27,7 +27,9 @@ describe('plugin-update', () => {
         commands: ['test', 'updated'],
       });
 
-      const pluginsPath = join(testDir, '.cursor', 'plugins.json');
+      const pluginsPath = join(testDir, '.aipm', 'config.json');
+      const aipmDir = join(testDir, '.aipm');
+      await mkdir(aipmDir, { recursive: true });
       await writeFile(
         pluginsPath,
         JSON.stringify({
@@ -52,7 +54,9 @@ describe('plugin-update', () => {
     });
 
     test('should error if plugin not installed', async () => {
-      const pluginsPath = join(testDir, '.cursor', 'plugins.json');
+      const pluginsPath = join(testDir, '.aipm', 'config.json');
+      const aipmDir = join(testDir, '.aipm');
+      await mkdir(aipmDir, { recursive: true });
       await writeFile(
         pluginsPath,
         JSON.stringify({
@@ -72,7 +76,9 @@ describe('plugin-update', () => {
     });
 
     test('should error if marketplace not found', async () => {
-      const pluginsPath = join(testDir, '.cursor', 'plugins.json');
+      const pluginsPath = join(testDir, '.aipm', 'config.json');
+      const aipmDir = join(testDir, '.aipm');
+      await mkdir(aipmDir, { recursive: true });
       await writeFile(
         pluginsPath,
         JSON.stringify({
@@ -95,7 +101,9 @@ describe('plugin-update', () => {
       const marketplaceDir = join(testDir, 'marketplace');
       await mkdir(marketplaceDir, { recursive: true });
 
-      const pluginsPath = join(testDir, '.cursor', 'plugins.json');
+      const pluginsPath = join(testDir, '.aipm', 'config.json');
+      const aipmDir = join(testDir, '.aipm');
+      await mkdir(aipmDir, { recursive: true });
       await writeFile(
         pluginsPath,
         JSON.stringify({
@@ -122,11 +130,13 @@ describe('plugin-update', () => {
         cwd: testDir,
       };
 
-      await expect(pluginUpdate(options)).rejects.toThrow('No plugins.json found');
+      await expect(pluginUpdate(options)).rejects.toThrow('No .aipm/config.json or .aipm/config.local.json found');
     });
 
     test('should error if invalid plugin ID format', async () => {
-      const pluginsPath = join(testDir, '.cursor', 'plugins.json');
+      const pluginsPath = join(testDir, '.aipm', 'config.json');
+      const aipmDir = join(testDir, '.aipm');
+      await mkdir(aipmDir, { recursive: true });
       await writeFile(
         pluginsPath,
         JSON.stringify({
@@ -154,7 +164,9 @@ describe('plugin-update', () => {
         commands: ['test', 'new'],
       });
 
-      const pluginsPath = join(testDir, '.cursor', 'plugins.json');
+      const pluginsPath = join(testDir, '.aipm', 'config.json');
+      const aipmDir = join(testDir, '.aipm');
+      await mkdir(aipmDir, { recursive: true });
       await writeFile(
         pluginsPath,
         JSON.stringify({
@@ -214,7 +226,9 @@ describe('plugin-update', () => {
       manifest.name = 'custom-plugin';
       await Bun.write(manifestPath, JSON.stringify(manifest, null, 2));
 
-      const pluginsPath = join(testDir, '.cursor', 'plugins.json');
+      const pluginsPath = join(testDir, '.aipm', 'config.json');
+      const aipmDir = join(testDir, '.aipm');
+      await mkdir(aipmDir, { recursive: true });
       await writeFile(
         pluginsPath,
         JSON.stringify({

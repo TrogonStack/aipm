@@ -1,6 +1,6 @@
 import { join } from 'node:path';
 import { z } from 'zod';
-import { getConfigPaths, loadPluginsConfig } from '../config/loader';
+import { getNotInitializedMessage, loadPluginsConfig } from '../config/loader';
 import { DIR_CURSOR } from '../constants';
 import { fileExists } from '../helpers/fs';
 import { resolveMarketplacePath } from '../helpers/git';
@@ -24,16 +24,15 @@ export async function pluginUpdate(options: unknown): Promise<void> {
   const cmd = PluginUpdateOptionsSchema.parse(options);
 
   const cwd = cmd.cwd || process.cwd();
-  const paths = getConfigPaths(cwd);
 
   try {
-    if (!(await fileExists(paths.plugins))) {
-      const error = new Error("No plugins.json found. Run 'aipm init' first.");
+    const { config, sources } = await loadPluginsConfig(cwd);
+
+    if (!sources.project && !sources.local) {
+      const error = new Error(getNotInitializedMessage());
       defaultIO.logError(error.message);
       throw error;
     }
-
-    const { config } = await loadPluginsConfig(cwd);
 
     if (!config.plugins[cmd.pluginId]) {
       const error = new Error(`Plugin '${cmd.pluginId}' is not installed`);

@@ -204,9 +204,10 @@ sudo cp dist/aipm-*/bin/aipm /usr/local/bin/
 sudo rm /usr/local/bin/aipm
 
 # Clean up config (optional)
-rm -rf ~/.cursor/marketplace
+rm -rf ~/.aipm
+rm -rf .aipm  # In project directories
 ```
 
 ## Next Steps
 
-After installation, see the [README.md](./README.md) for usage instructions.
+After installation, see the [README.md](../../README.md) for usage instructions.

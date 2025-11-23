@@ -61,7 +61,7 @@ describe('command error handling', () => {
     test('handles empty config from loadPluginsConfig', async () => {
       const spy = spyOn(loader, 'loadPluginsConfig').mockResolvedValue({
         config: { marketplaces: {}, plugins: {} },
-        sources: { project: '/test/.cursor/plugins.json', global: null, local: null, claude: null },
+        sources: { project: '/test/.aipm/config.json', global: null, local: null, claude: null },
       });
 
       await marketplaceAdd({ name: 'test', path: '/test', cwd: testDir });
@@ -85,7 +85,7 @@ describe('command error handling', () => {
     test('handles empty config from loadPluginsConfig', async () => {
       const spy = spyOn(loader, 'loadPluginsConfig').mockResolvedValue({
         config: { marketplaces: {}, plugins: {} },
-        sources: { project: '/test/.cursor/plugins.json', global: null, local: null, claude: null },
+        sources: { project: '/test/.aipm/config.json', global: null, local: null, claude: null },
       });
 
       await marketplaceRemove({ name: 'test', cwd: testDir });
@@ -109,7 +109,7 @@ describe('command error handling', () => {
     test('handles empty config from loadPluginsConfig', async () => {
       const spy = spyOn(loader, 'loadPluginsConfig').mockResolvedValue({
         config: { marketplaces: {}, plugins: {} },
-        sources: { project: '/test/.cursor/plugins.json', global: null, local: null, claude: null },
+        sources: { project: '/test/.aipm/config.json', global: null, local: null, claude: null },
       });
 
       await pluginEnable({ pluginId: 'test@marketplace', cwd: testDir });
@@ -133,7 +133,7 @@ describe('command error handling', () => {
     test('handles empty config from loadPluginsConfig', async () => {
       const spy = spyOn(loader, 'loadPluginsConfig').mockResolvedValue({
         config: { marketplaces: {}, plugins: {} },
-        sources: { project: '/test/.cursor/plugins.json', global: null, local: null, claude: null },
+        sources: { project: '/test/.aipm/config.json', global: null, local: null, claude: null },
       });
 
       await pluginDisable({ pluginId: 'test@marketplace', cwd: testDir });
@@ -167,7 +167,7 @@ describe('command error handling', () => {
     test('handles empty config from loadPluginsConfig', async () => {
       const spy = spyOn(loader, 'loadPluginsConfig').mockResolvedValue({
         config: { marketplaces: {}, plugins: {} },
-        sources: { project: '/test/.cursor/plugins.json', global: null, local: null, claude: null },
+        sources: { project: '/test/.aipm/config.json', global: null, local: null, claude: null },
       });
       const emptyDir = await mkdtemp(join(tmpdir(), 'cursor-empty-'));
 

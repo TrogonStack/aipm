@@ -8,11 +8,26 @@ export const DIR_MARKETPLACE = 'marketplace';
 export const DIR_CACHE = 'cache';
 
 /**
+ * Plugin subdirectory types
+ */
+export const PLUGIN_SUBDIRS = ['commands', 'rules', 'agents', 'skills', 'hooks'] as const;
+export type PluginSubdir = (typeof PLUGIN_SUBDIRS)[number];
+
+/**
+ * Project-level AIPM directory
+ */
+export const DIR_AIPM = '.aipm';
+export const FILE_AIPM_CONFIG = 'config.json';
+export const FILE_AIPM_CONFIG_LOCAL = 'config.local.json';
+
+/**
+ * Global AIPM directory
+ */
+export const AIPM_GLOBAL_DEFAULT = '.aipm';
+
+/**
  * Configuration file names
  */
-export const FILE_PLUGINS_CONFIG = 'plugins.json';
-export const FILE_PLUGINS_LOCAL = 'plugins.local.json';
-export const FILE_PLUGINS_EXAMPLE = 'plugins.local.json.example';
 export const FILE_GLOBAL_CONFIG = 'config.json';
 export const FILE_MARKETPLACE_MANIFEST = 'marketplace.json';
 export const FILE_PLUGIN_MANIFEST = 'plugin.json';

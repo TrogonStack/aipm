@@ -37,8 +37,8 @@ OPTIONS:
   -h, --help        Show this help message
   -v, --version     Show version
   -d, --dry-run     Show what would be done without doing it
-  -l, --local       Use plugins.local.json instead of plugins.json
-  -g, --global      Use global config
+  -l, --local       Use .aipm/config.local.json instead of .aipm/config.json
+  -g, --global      Use global config (~/.aipm/config.json)
   -f, --force       Overwrite existing files
   --example         Use example template (init only)
   --remove-files    Delete plugin files from filesystem (uninstall only)

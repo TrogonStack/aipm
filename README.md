@@ -4,7 +4,7 @@
 
 Manage Cursor plugins from multiple sources including AIPM marketplaces and **auto-discovered Claude Code marketplaces**. Install plugins to Cursor from Claude Code's ecosystem without manual configuration.
 
-**Simple model**: AIPM manages Cursor's `.cursor/` directory and can read from Claude Code's `.claude/` marketplaces for plugin discovery.
+**Simple model**: AIPM stores configuration in `.aipm/` directory, syncs plugins to `.cursor/`, and can read from Claude Code's `.claude/` marketplaces for plugin discovery.
 
 Inspired by [Claude Code's plugin marketplace system](https://docs.claude.com/en/docs/claude-code/plugin-marketplaces), extended with marketplace federation and nested plugin structure support.
 
@@ -15,9 +15,9 @@ Inspired by [Claude Code's plugin marketplace system](https://docs.claude.com/en
 mise use -g ubi:TrogonStack/aipm
 
 # Or download pre-built binary for your platform
-# See INSTALLATION.md for platform-specific download commands
+# See docs/how-to/installation.md for platform-specific download commands
 
-# Initialize (auto-detects Cursor or Claude Code)
+# Initialize (creates .aipm/ directory structure)
 aipm init
 
 # Add a marketplace
@@ -27,6 +27,25 @@ aipm marketplace add team https://github.com/your-org/plugins.git
 aipm plugin install my-plugin@team
 aipm plugin install document-skills/docx@anthropic  # nested plugin support
 ```
+
+## Directory Structure
+
+AIPM uses a clean separation between configuration and synced content:
+
+```
+~/.aipm/cache/              # Shared git marketplace cache
+
+project/
+├── .aipm/
+│   ├── config.json        # Team config (commit to git)
+│   └── config.local.json  # Personal overrides (git-ignored)
+└── .cursor/               # Synced plugin files
+    ├── commands/
+    ├── rules/
+    └── agents/
+```
+
+**Clean separation:** AIPM configuration lives in `.aipm/`, synced content lives in `.cursor/`
 
 ### Claude Code Marketplace Federation
 
@@ -63,6 +82,6 @@ The documentation follows the [Diátaxis framework](https://diataxis.fr/):
 
 ## Links
 
-- **[Installation Guide](./INSTALLATION.md)** - Platform-specific installation
+- **[Installation Guide](./docs/how-to/installation.md)** - Platform-specific installation
 - **[Contributing Guide](./CONTRIBUTING.md)** - Development setup
 - **[License](./LICENSE)** - MIT License

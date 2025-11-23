@@ -1,9 +1,9 @@
 import { z } from 'zod';
-import { getConfigPaths, loadPluginsConfig } from '../config/loader';
-import { fileExists, writeJsonFile } from '../helpers/fs';
+import { getConfigPath, getNotInitializedMessage, loadPluginsConfig } from '../config/loader';
+import { FILE_AIPM_CONFIG, FILE_AIPM_CONFIG_LOCAL } from '../constants';
+import { loadTargetConfig, saveConfig } from '../helpers/aipm-config';
 import { expandGitHubShorthand, isGitHubShorthand, parseGitHubShorthand } from '../helpers/github';
 import { defaultIO } from '../helpers/io';
-import { PluginsConfigSchema } from '../schema';
 
 const MarketplaceAddOptionsSchema = z.object({
   name: z.string().min(1),
@@ -17,23 +17,24 @@ export async function marketplaceAdd(options: unknown): Promise<void> {
   const cmd = MarketplaceAddOptionsSchema.parse(options);
 
   const cwd = cmd.cwd || process.cwd();
-  const paths = getConfigPaths(cwd);
 
   try {
-    const targetPath = cmd.local ? paths.pluginsLocal : paths.plugins;
-    const configName = cmd.local ? '.cursor/plugins.local.json' : '.cursor/plugins.json';
+    // Load merged config to check for conflicts across all sources
+    const { config: mergedConfig, sources } = await loadPluginsConfig(cwd);
 
-    if (!(await fileExists(paths.plugins))) {
-      defaultIO.logError("No plugins.json found. Run 'aipm init' first.");
+    if (!sources.project && !sources.local) {
+      defaultIO.logError(getNotInitializedMessage());
       return;
     }
 
-    const { config } = await loadPluginsConfig(cwd);
-
-    if (config.marketplaces[cmd.name]) {
+    if (mergedConfig.marketplaces[cmd.name]) {
       defaultIO.logError(`Marketplace '${cmd.name}' already exists`);
       return;
     }
+
+    // Load only the target config file (not merged) for modification
+    const targetConfig = await loadTargetConfig(cwd, cmd.local);
+    const configName = cmd.local ? getConfigPath(FILE_AIPM_CONFIG_LOCAL) : getConfigPath(FILE_AIPM_CONFIG);
 
     const isHttpUrl = cmd.path.startsWith('http://') || cmd.path.startsWith('https://');
 
@@ -73,10 +74,11 @@ export async function marketplaceAdd(options: unknown): Promise<void> {
       };
     }
 
+    // Modify only the target config
     const updatedConfig = {
-      ...config,
+      ...targetConfig,
       marketplaces: {
-        ...config.marketplaces,
+        ...targetConfig.marketplaces,
         [cmd.name]: marketplace,
       },
     };
@@ -90,7 +92,7 @@ export async function marketplaceAdd(options: unknown): Promise<void> {
         defaultIO.logInfo(`[DRY RUN] URL: ${marketplace.url}`);
       }
     } else {
-      await writeJsonFile(targetPath, updatedConfig, PluginsConfigSchema, cmd.dryRun);
+      await saveConfig(cwd, updatedConfig, cmd.local);
       defaultIO.logSuccess(`Added marketplace '${cmd.name}' to ${configName}`);
     }
   } catch (error: unknown) {

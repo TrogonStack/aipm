@@ -27,7 +27,9 @@ describe('plugin-search', () => {
       const marketplace2Dir = join(testDir, 'marketplace2');
       await mkdir(join(marketplace2Dir, 'plugin-c', '.claude-plugin'), { recursive: true });
 
-      const pluginsPath = join(testDir, '.cursor', 'plugins.json');
+      const pluginsPath = join(testDir, '.aipm', 'config.json');
+      const aipmDir = join(testDir, '.aipm');
+      await mkdir(aipmDir, { recursive: true });
       await writeFile(
         pluginsPath,
         JSON.stringify({
@@ -82,7 +84,9 @@ describe('plugin-search', () => {
         recursive: true,
       });
 
-      const pluginsPath = join(testDir, '.cursor', 'plugins.json');
+      const pluginsPath = join(testDir, '.aipm', 'config.json');
+      const aipmDir = join(testDir, '.aipm');
+      await mkdir(aipmDir, { recursive: true });
       await writeFile(
         pluginsPath,
         JSON.stringify({
@@ -104,7 +108,9 @@ describe('plugin-search', () => {
       const marketplaceDir = join(testDir, 'marketplace');
       await mkdir(marketplaceDir, { recursive: true });
 
-      const pluginsPath = join(testDir, '.cursor', 'plugins.json');
+      const pluginsPath = join(testDir, '.aipm', 'config.json');
+      const aipmDir = join(testDir, '.aipm');
+      await mkdir(aipmDir, { recursive: true });
       await writeFile(
         pluginsPath,
         JSON.stringify({
@@ -130,7 +136,9 @@ describe('plugin-search', () => {
       await mkdir(join(marketplaceDir, 'vue-helper', '.claude-plugin'), { recursive: true });
       await mkdir(join(marketplaceDir, 'angular-tool', '.claude-plugin'), { recursive: true });
 
-      const pluginsPath = join(testDir, '.cursor', 'plugins.json');
+      const pluginsPath = join(testDir, '.aipm', 'config.json');
+      const aipmDir = join(testDir, '.aipm');
+      await mkdir(aipmDir, { recursive: true });
       await writeFile(
         pluginsPath,
         JSON.stringify({
@@ -182,7 +190,9 @@ describe('plugin-search', () => {
       await mkdir(join(marketplaceDir, 'plugin-b', '.claude-plugin'), { recursive: true });
       await mkdir(join(marketplaceDir, 'plugin-c', '.claude-plugin'), { recursive: true });
 
-      const pluginsPath = join(testDir, '.cursor', 'plugins.json');
+      const pluginsPath = join(testDir, '.aipm', 'config.json');
+      const aipmDir = join(testDir, '.aipm');
+      await mkdir(aipmDir, { recursive: true });
       await writeFile(
         pluginsPath,
         JSON.stringify({
@@ -208,7 +218,9 @@ describe('plugin-search', () => {
       const marketplace2Dir = join(testDir, 'vue-plugins');
       await mkdir(join(marketplace2Dir, 'plugin-b', '.claude-plugin'), { recursive: true });
 
-      const pluginsPath = join(testDir, '.cursor', 'plugins.json');
+      const pluginsPath = join(testDir, '.aipm', 'config.json');
+      const aipmDir = join(testDir, '.aipm');
+      await mkdir(aipmDir, { recursive: true });
       await writeFile(
         pluginsPath,
         JSON.stringify({
@@ -235,7 +247,9 @@ describe('plugin-search', () => {
       const marketplaceDir = join(testDir, 'marketplace');
       await mkdir(join(marketplaceDir, 'plugin-a', '.claude-plugin'), { recursive: true });
 
-      const pluginsPath = join(testDir, '.cursor', 'plugins.json');
+      const pluginsPath = join(testDir, '.aipm', 'config.json');
+      const aipmDir = join(testDir, '.aipm');
+      await mkdir(aipmDir, { recursive: true });
       await writeFile(
         pluginsPath,
         JSON.stringify({
@@ -258,7 +272,9 @@ describe('plugin-search', () => {
       const marketplaceDir = join(testDir, 'marketplace');
       await mkdir(join(marketplaceDir, 'ReactHelper', '.claude-plugin'), { recursive: true });
 
-      const pluginsPath = join(testDir, '.cursor', 'plugins.json');
+      const pluginsPath = join(testDir, '.aipm', 'config.json');
+      const aipmDir = join(testDir, '.aipm');
+      await mkdir(aipmDir, { recursive: true });
       await writeFile(
         pluginsPath,
         JSON.stringify({
@@ -299,7 +315,9 @@ describe('plugin-search', () => {
     });
 
     test('should handle marketplaces with invalid paths', async () => {
-      const pluginsPath = join(testDir, '.cursor', 'plugins.json');
+      const pluginsPath = join(testDir, '.aipm', 'config.json');
+      const aipmDir = join(testDir, '.aipm');
+      await mkdir(aipmDir, { recursive: true });
       await writeFile(
         pluginsPath,
         JSON.stringify({
@@ -324,7 +342,9 @@ describe('plugin-search', () => {
       await mkdir(join(marketplaceDir, 'plugin-a', '.claude-plugin'), { recursive: true });
       await mkdir(join(marketplaceDir, 'plugin-b', '.claude-plugin'), { recursive: true });
 
-      const pluginsPath = join(testDir, '.cursor', 'plugins.json');
+      const pluginsPath = join(testDir, '.aipm', 'config.json');
+      const aipmDir = join(testDir, '.aipm');
+      await mkdir(aipmDir, { recursive: true });
       await writeFile(
         pluginsPath,
         JSON.stringify({
@@ -359,7 +379,9 @@ describe('plugin-search', () => {
       await mkdir(join(marketplaceDir, 'available plugins', 'plugin-b', '.claude-plugin'), { recursive: true });
       await mkdir(join(marketplaceDir, 'available scripts', 'script-a', '.claude-plugin'), { recursive: true });
 
-      const pluginsPath = join(testDir, '.cursor', 'plugins.json');
+      const pluginsPath = join(testDir, '.aipm', 'config.json');
+      const aipmDir = join(testDir, '.aipm');
+      await mkdir(aipmDir, { recursive: true });
       await writeFile(
         pluginsPath,
         JSON.stringify({
@@ -385,7 +407,9 @@ describe('plugin-search', () => {
       // Add actual plugins inside
       await mkdir(join(marketplaceDir, 'available plugins', 'real-plugin', '.claude-plugin'), { recursive: true });
 
-      const pluginsPath = join(testDir, '.cursor', 'plugins.json');
+      const pluginsPath = join(testDir, '.aipm', 'config.json');
+      const aipmDir = join(testDir, '.aipm');
+      await mkdir(aipmDir, { recursive: true });
       await writeFile(
         pluginsPath,
         JSON.stringify({

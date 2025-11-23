@@ -43,7 +43,7 @@ describe('getGlobalDir', () => {
     }
   });
 
-  test('returns default ~/.cursor/marketplace when no override or env', () => {
+  test('returns default ~/.aipm when no override or env', () => {
     const originalEnv = process.env.AIPM_GLOBAL_DIR;
 
     try {
@@ -51,9 +51,8 @@ describe('getGlobalDir', () => {
       resetEnvCache();
 
       const globalDir = getGlobalDir();
-      expect(globalDir).toContain('.cursor');
-      expect(globalDir).toContain('marketplace');
-      expect(globalDir).toMatch(/\.cursor\/marketplace$/);
+      expect(globalDir).toContain('.aipm');
+      expect(globalDir).toMatch(/\.aipm$/);
     } finally {
       if (originalEnv) {
         process.env.AIPM_GLOBAL_DIR = originalEnv;

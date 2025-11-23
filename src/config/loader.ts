@@ -1,22 +1,32 @@
+import merge from 'lodash.merge';
 import { join } from 'node:path';
-import {
-  DIR_CURSOR,
-  FILE_GITIGNORE,
-  FILE_GLOBAL_CONFIG,
-  FILE_PLUGINS_CONFIG,
-  FILE_PLUGINS_EXAMPLE,
-  FILE_PLUGINS_LOCAL,
-} from '../constants';
+import { DIR_AIPM, FILE_AIPM_CONFIG, FILE_AIPM_CONFIG_LOCAL, FILE_GITIGNORE } from '../constants';
 import { isFileNotFoundError } from '../errors';
+import { loadAIPMConfig, loadAIPMLocalConfig } from '../helpers/aipm-config';
 import {
   convertClaudeMarketplaceToAIPM,
   getClaudeCodePluginsDir,
   isClaudeCodeInstalled,
   readClaudeCodeMarketplaces,
 } from '../helpers/claude-code-config';
+import { fileExists } from '../helpers/fs';
 import { getGlobalDir } from '../helpers/paths';
 import type { MarketplaceSource, PluginsConfig } from '../schema';
 import { PluginsConfigSchema } from '../schema';
+
+/**
+ * Get the relative path for a config file
+ */
+export function getConfigPath(fileName: string): string {
+  return `${DIR_AIPM}/${fileName}`;
+}
+
+/**
+ * Get a formatted error message for missing config files
+ */
+export function getNotInitializedMessage(): string {
+  return `No ${getConfigPath(FILE_AIPM_CONFIG)} or ${getConfigPath(FILE_AIPM_CONFIG_LOCAL)} found. Run 'aipm init' first.`;
+}
 
 export class ConfigValidationError extends Error {
   constructor(
@@ -49,6 +59,7 @@ async function loadOptionalConfig(
       config: {
         marketplaces: parseResult.data.marketplaces || {},
         plugins: parseResult.data.plugins || {},
+        ...(parseResult.data.integrations ? { integrations: parseResult.data.integrations } : {}),
       },
       path,
     };
@@ -63,30 +74,6 @@ async function loadOptionalConfig(
   }
 }
 
-async function loadProjectConfig(configPath: string): Promise<PluginsConfig | null> {
-  try {
-    const file = Bun.file(configPath);
-    const rawConfig = await file.json();
-
-    const parseResult = PluginsConfigSchema.safeParse(rawConfig);
-    if (!parseResult.success) {
-      throw new ConfigValidationError(configPath, { cause: parseResult.error });
-    }
-
-    return parseResult.data;
-  } catch (error) {
-    if (error instanceof ConfigValidationError) {
-      throw error;
-    }
-    // File doesn't exist - return null so caller can check other sources
-    if (isFileNotFoundError(error)) {
-      return null;
-    }
-    // Other errors should be thrown
-    throw error;
-  }
-}
-
 export type PluginsConfigWithMetadata = {
   config: PluginsConfig;
   sources: {
@@ -98,20 +85,19 @@ export type PluginsConfigWithMetadata = {
 };
 
 export async function loadPluginsConfig(baseDir: string): Promise<PluginsConfigWithMetadata> {
-  const configPath = join(baseDir, DIR_CURSOR, FILE_PLUGINS_CONFIG);
-  const localConfigPath = join(baseDir, DIR_CURSOR, FILE_PLUGINS_LOCAL);
+  const paths = getConfigPaths(baseDir);
 
-  const config = await loadProjectConfig(configPath);
-  const projectConfigPath = config !== null ? configPath : null;
+  const projectConfig = await loadAIPMConfig(baseDir);
+  const projectConfigPath = projectConfig !== null ? paths.aipmConfig : null;
+
+  const localConfig = await loadAIPMLocalConfig(baseDir);
+  const localConfigPath = (await fileExists(paths.aipmConfigLocal)) ? paths.aipmConfigLocal : null;
 
   const globalDir = getGlobalDir();
-  const globalConfigPath = join(globalDir, FILE_GLOBAL_CONFIG);
-
+  const globalConfigPath = join(globalDir, FILE_AIPM_CONFIG);
   const { config: globalConfig, path: globalConfigPathResult } = await loadOptionalConfig(globalConfigPath, {
     ignoreValidationErrors: true,
   });
-
-  const { config: localConfig, path: localConfigPathResult } = await loadOptionalConfig(localConfigPath);
 
   const claudeMarketplaces: Record<string, MarketplaceSource> = {};
   let claudeConfigPath: string | null = null;
@@ -123,12 +109,10 @@ export async function loadPluginsConfig(baseDir: string): Promise<PluginsConfigW
 
       if (
         globalConfig.marketplaces[prefixedName] ||
-        config?.marketplaces[prefixedName] ||
+        projectConfig?.marketplaces[prefixedName] ||
         localConfig.marketplaces[prefixedName]
       ) {
-        console.warn(
-          `⚠️  Skipping Claude Code marketplace '${prefixedName}' - name conflict with existing AIPM marketplace`,
-        );
+        console.warn(`⚠️  Skipping Claude Code marketplace '${prefixedName}' - name conflict`);
         continue;
       }
 
@@ -136,31 +120,22 @@ export async function loadPluginsConfig(baseDir: string): Promise<PluginsConfigW
         marketplaceName,
         marketplaceConfig,
       ) as MarketplaceSource;
-      // Claude Code config is loaded from Claude Code's plugins directory
+
       if (claudeConfigPath === null) {
         claudeConfigPath = getClaudeCodePluginsDir();
       }
     }
   }
 
+  // 6. Deep merge configs using lodash.merge (priority: local > project > global > claude)
+  const mergedConfig = merge({}, { marketplaces: claudeMarketplaces }, globalConfig, projectConfig ?? {}, localConfig);
+
   return {
-    config: {
-      marketplaces: {
-        ...globalConfig.marketplaces,
-        ...(config?.marketplaces ?? {}),
-        ...localConfig.marketplaces,
-        ...claudeMarketplaces,
-      },
-      plugins: {
-        ...globalConfig.plugins,
-        ...(config?.plugins ?? {}),
-        ...localConfig.plugins,
-      },
-    },
+    config: mergedConfig,
     sources: {
       project: projectConfigPath,
       global: globalConfigPathResult,
-      local: localConfigPathResult,
+      local: localConfigPath,
       claude: claudeConfigPath,
     },
   };
@@ -168,10 +143,12 @@ export async function loadPluginsConfig(baseDir: string): Promise<PluginsConfigW
 
 export function getConfigPaths(baseDir: string) {
   return {
-    cursor: join(baseDir, DIR_CURSOR),
-    plugins: join(baseDir, DIR_CURSOR, FILE_PLUGINS_CONFIG),
-    pluginsLocal: join(baseDir, DIR_CURSOR, FILE_PLUGINS_LOCAL),
-    pluginsExample: join(baseDir, DIR_CURSOR, FILE_PLUGINS_EXAMPLE),
+    // Project-level AIPM configs
+    aipm: join(baseDir, DIR_AIPM),
+    aipmConfig: join(baseDir, DIR_AIPM, FILE_AIPM_CONFIG),
+    aipmConfigLocal: join(baseDir, DIR_AIPM, FILE_AIPM_CONFIG_LOCAL),
+
+    // Utility paths
     gitignore: join(baseDir, FILE_GITIGNORE),
   };
 }

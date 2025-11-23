@@ -32,7 +32,7 @@ describe('Zod validation', () => {
     test('rejects invalid marketplace source', async () => {
       await init({ cwd: testDir });
 
-      const configPath = join(testDir, '.cursor', 'plugins.json');
+      const configPath = join(testDir, '.aipm', 'config.json');
       const invalidConfig = {
         marketplaces: {
           'bad-marketplace': {
@@ -50,7 +50,7 @@ describe('Zod validation', () => {
     test('rejects invalid plugin config', async () => {
       await init({ cwd: testDir });
 
-      const configPath = join(testDir, '.cursor', 'plugins.json');
+      const configPath = join(testDir, '.aipm', 'config.json');
       const invalidConfig = {
         marketplaces: {},
         plugins: {
@@ -89,7 +89,7 @@ describe('Zod validation', () => {
     test('throws error for malformed JSON', async () => {
       await init({ cwd: testDir });
 
-      const configPath = join(testDir, '.cursor', 'plugins.json');
+      const configPath = join(testDir, '.aipm', 'config.json');
       await Bun.write(configPath, '{invalid json}');
 
       // loadPluginsConfig throws error for malformed JSON
@@ -99,7 +99,7 @@ describe('Zod validation', () => {
     test('validates merged config from plugins.json and plugins.local.json', async () => {
       await init({ cwd: testDir, example: true });
 
-      const localConfigPath = join(testDir, '.cursor', 'plugins.local.json');
+      const localConfigPath = join(testDir, '.aipm', 'config.local.json');
       const localConfig = {
         plugins: {
           'local-plugin@custom': {
@@ -118,21 +118,24 @@ describe('Zod validation', () => {
       expect(merged.plugins['local-plugin@custom']?.enabled).toBe(true);
     });
 
-    test('rejects invalid plugins.local.json', async () => {
+    test('gracefully ignores invalid plugins.local.json', async () => {
       await init({ cwd: testDir });
 
-      const localConfigPath = join(testDir, '.cursor', 'plugins.local.json');
+      const localConfigPath = join(testDir, '.aipm', 'config.local.json');
       const invalidLocal = {
         plugins: {
           'test-plugin@marketplace': {
-            enabled: 123, // Should fail - must be boolean
+            enabled: 123, // Invalid - must be boolean
           },
         },
       };
 
       await Bun.write(localConfigPath, JSON.stringify(invalidLocal));
 
-      await expect(loadPluginsConfig(testDir)).rejects.toThrow(ConfigValidationError);
+      // Should not throw - invalid local config is gracefully ignored
+      const { config } = await loadPluginsConfig(testDir);
+      expect(config).toHaveProperty('marketplaces');
+      expect(config).toHaveProperty('plugins');
     });
   });
 

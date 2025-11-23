@@ -42,7 +42,7 @@ describe('dry-run mode', () => {
     test('dry-run with force does not overwrite existing files', async () => {
       await init({ cwd: testDir });
 
-      const pluginsFile = join(testDir, '.cursor', 'plugins.json');
+      const pluginsFile = join(testDir, '.aipm', 'config.json');
       const originalContent = await Bun.file(pluginsFile).json();
 
       await init({
@@ -67,7 +67,7 @@ describe('dry-run mode', () => {
 
       const content = await Bun.file(gitignorePath).text();
       expect(content).toBe('node_modules/\n');
-      expect(content.includes('.cursor/plugins.local.json')).toBe(false);
+      expect(content.includes('.aipm/config.local.json')).toBe(false);
     });
   });
 

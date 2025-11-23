@@ -20,7 +20,9 @@ describe('plugin-uninstall', () => {
 
   describe('basic uninstall', () => {
     test('should remove plugin from config', async () => {
-      const pluginsPath = join(testDir, '.cursor', 'plugins.json');
+      const pluginsPath = join(testDir, '.aipm', 'config.json');
+      const aipmDir = join(testDir, '.aipm');
+      await mkdir(aipmDir, { recursive: true });
       await writeFile(
         pluginsPath,
         JSON.stringify({
@@ -47,7 +49,9 @@ describe('plugin-uninstall', () => {
     });
 
     test('should error if plugin not found', async () => {
-      const pluginsPath = join(testDir, '.cursor', 'plugins.json');
+      const pluginsPath = join(testDir, '.aipm', 'config.json');
+      const aipmDir = join(testDir, '.aipm');
+      await mkdir(aipmDir, { recursive: true });
       await writeFile(
         pluginsPath,
         JSON.stringify({
@@ -76,7 +80,9 @@ describe('plugin-uninstall', () => {
 
   describe('local config', () => {
     test('should remove from plugins.local.json when local=true', async () => {
-      const pluginsLocalPath = join(testDir, '.cursor', 'plugins.local.json');
+      const pluginsLocalPath = join(testDir, '.aipm', 'config.local.json');
+      const aipmDir = join(testDir, '.aipm');
+      await mkdir(aipmDir, { recursive: true });
       await writeFile(
         pluginsLocalPath,
         JSON.stringify({
@@ -87,7 +93,7 @@ describe('plugin-uninstall', () => {
         }),
       );
 
-      const pluginsPath = join(testDir, '.cursor', 'plugins.json');
+      const pluginsPath = join(testDir, '.aipm', 'config.json');
       await writeFile(
         pluginsPath,
         JSON.stringify({
@@ -111,7 +117,9 @@ describe('plugin-uninstall', () => {
 
   describe('removeFiles option', () => {
     test('should delete plugin files when removeFiles=true', async () => {
-      const pluginsPath = join(testDir, '.cursor', 'plugins.json');
+      const pluginsPath = join(testDir, '.aipm', 'config.json');
+      const aipmDir = join(testDir, '.aipm');
+      await mkdir(aipmDir, { recursive: true });
       await writeFile(
         pluginsPath,
         JSON.stringify({
@@ -143,7 +151,9 @@ describe('plugin-uninstall', () => {
     });
 
     test('should not delete plugin files when removeFiles=false', async () => {
-      const pluginsPath = join(testDir, '.cursor', 'plugins.json');
+      const pluginsPath = join(testDir, '.aipm', 'config.json');
+      const aipmDir = join(testDir, '.aipm');
+      await mkdir(aipmDir, { recursive: true });
       await writeFile(
         pluginsPath,
         JSON.stringify({
@@ -173,7 +183,9 @@ describe('plugin-uninstall', () => {
     });
 
     test('should handle missing plugin files gracefully', async () => {
-      const pluginsPath = join(testDir, '.cursor', 'plugins.json');
+      const pluginsPath = join(testDir, '.aipm', 'config.json');
+      const aipmDir = join(testDir, '.aipm');
+      await mkdir(aipmDir, { recursive: true });
       await writeFile(
         pluginsPath,
         JSON.stringify({
@@ -199,7 +211,9 @@ describe('plugin-uninstall', () => {
 
   describe('dry-run mode', () => {
     test('should not modify config in dry-run mode', async () => {
-      const pluginsPath = join(testDir, '.cursor', 'plugins.json');
+      const aipmDir = join(testDir, '.aipm');
+      await mkdir(aipmDir, { recursive: true });
+      const pluginsPath = join(testDir, '.aipm', 'config.json');
       const originalConfig = {
         marketplaces: { local: { source: 'directory', path: './plugins' } },
         plugins: {
@@ -221,7 +235,9 @@ describe('plugin-uninstall', () => {
     });
 
     test('should not delete files in dry-run mode', async () => {
-      const pluginsPath = join(testDir, '.cursor', 'plugins.json');
+      const pluginsPath = join(testDir, '.aipm', 'config.json');
+      const aipmDir = join(testDir, '.aipm');
+      await mkdir(aipmDir, { recursive: true });
       await writeFile(
         pluginsPath,
         JSON.stringify({
@@ -260,7 +276,9 @@ describe('plugin-uninstall', () => {
     });
 
     test('should handle pluginId without @ separator', async () => {
-      const pluginsPath = join(testDir, '.cursor', 'plugins.json');
+      const pluginsPath = join(testDir, '.aipm', 'config.json');
+      const aipmDir = join(testDir, '.aipm');
+      await mkdir(aipmDir, { recursive: true });
       await writeFile(
         pluginsPath,
         JSON.stringify({
@@ -289,7 +307,9 @@ describe('plugin-uninstall', () => {
 
   describe('multiple plugins', () => {
     test('should only remove specified plugin', async () => {
-      const pluginsPath = join(testDir, '.cursor', 'plugins.json');
+      const pluginsPath = join(testDir, '.aipm', 'config.json');
+      const aipmDir = join(testDir, '.aipm');
+      await mkdir(aipmDir, { recursive: true });
       await writeFile(
         pluginsPath,
         JSON.stringify({

@@ -1,5 +1,5 @@
 import { join } from 'node:path';
-import { DIR_CURSOR, DIR_MARKETPLACE } from '../constants';
+import { AIPM_GLOBAL_DEFAULT, DIR_CACHE } from '../constants';
 import { ProcessEnvSchema, type ProcessEnv } from '../schema';
 
 /**
@@ -47,7 +47,7 @@ export function getHomeDir(): string {
 
 /**
  * Get the global directory for AIPM
- * Defaults to ~/.cursor/marketplace
+ * Defaults to ~/.aipm
  */
 export function getGlobalDir(override?: string): string {
   if (override) {
@@ -60,5 +60,13 @@ export function getGlobalDir(override?: string): string {
   }
 
   const homeDir = getHomeDir();
-  return join(homeDir, DIR_CURSOR, DIR_MARKETPLACE);
+  return join(homeDir, AIPM_GLOBAL_DEFAULT); // ~/.aipm
+}
+
+/**
+ * Get the global cache directory for git marketplaces
+ */
+export function getGlobalCacheDir(override?: string): string {
+  const globalDir = getGlobalDir(override);
+  return join(globalDir, DIR_CACHE); // ~/.aipm/cache/
 }
