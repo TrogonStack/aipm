@@ -1,8 +1,9 @@
+import merge from 'lodash.merge';
 import { join } from 'node:path';
 import { z } from 'zod';
 import { getConfigPath, getNotInitializedMessage, loadPluginsConfig } from '../config/loader';
 import { DIR_CURSOR, FILE_AIPM_CONFIG, FILE_AIPM_CONFIG_LOCAL } from '../constants';
-import { saveConfig } from '../helpers/aipm-config';
+import { loadTargetConfig, saveConfig } from '../helpers/aipm-config';
 import { fileExists } from '../helpers/fs';
 import { resolveMarketplacePath } from '../helpers/git';
 import { defaultIO } from '../helpers/io';
@@ -100,21 +101,16 @@ export async function pluginInstall(options: unknown): Promise<void> {
       return;
     }
 
-    const updatedConfig = {
-      ...config,
-      plugins: {
-        ...config.plugins,
-        [cmd.pluginId]: {
-          enabled: true,
-        },
-      },
-    };
-
     if (cmd.dryRun) {
       defaultIO.logInfo(`[DRY RUN] Would enable plugin '${cmd.pluginId}' in ${configName}`);
       defaultIO.logInfo(`[DRY RUN] Would sync ${cmd.pluginId} to .cursor/`);
       return;
     }
+
+    const targetConfig = await loadTargetConfig(cwd, cmd.local);
+    const updatedConfig = merge({}, targetConfig, {
+      plugins: { [cmd.pluginId]: { enabled: true } },
+    });
 
     await saveConfig(cwd, updatedConfig, cmd.local);
     defaultIO.logSuccess(`Enabled plugin '${cmd.pluginId}' in ${configName}`);

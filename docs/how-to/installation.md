@@ -114,7 +114,7 @@ cd aipm
 bun install
 
 # Run directly without building
-bun run src/cli.ts <command>
+bun run src/cli.ts {command}
 
 # Or use watch mode
 bun run dev

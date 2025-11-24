@@ -6,6 +6,7 @@ export const DIR_CLAUDE = '.claude';
 export const DIR_CLAUDE_PLUGIN = '.claude-plugin';
 export const DIR_MARKETPLACE = 'marketplace';
 export const DIR_CACHE = 'cache';
+export const DIR_AIPM_NAMESPACE = 'aipm';
 
 /**
  * Plugin subdirectory types

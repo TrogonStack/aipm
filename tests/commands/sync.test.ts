@@ -54,7 +54,7 @@ describe('sync command', () => {
 
       await sync({ cwd: testDir });
 
-      const commandsPath = join(testDir, '.cursor', 'commands', 'local', 'test-plugin', 'test.md');
+      const commandsPath = join(testDir, '.cursor', 'commands', 'aipm', 'local', 'test-plugin', 'test.md');
       expect(await fileExists(commandsPath)).toBe(true);
     });
 
@@ -77,8 +77,8 @@ describe('sync command', () => {
 
       await sync({ cwd: testDir });
 
-      expect(await fileExists(join(testDir, '.cursor', 'commands', 'local', 'plugin1', 'test.md'))).toBe(true);
-      expect(await fileExists(join(testDir, '.cursor', 'commands', 'local', 'plugin2', 'test.md'))).toBe(true);
+      expect(await fileExists(join(testDir, '.cursor', 'commands', 'aipm', 'local', 'plugin1', 'test.md'))).toBe(true);
+      expect(await fileExists(join(testDir, '.cursor', 'commands', 'aipm', 'local', 'plugin2', 'test.md'))).toBe(true);
     });
 
     test('only syncs enabled plugins', async () => {
@@ -105,8 +105,10 @@ describe('sync command', () => {
 
       await sync({ cwd: testDir });
 
-      expect(await fileExists(join(testDir, '.cursor', 'commands', 'local', 'enabled', 'test.md'))).toBe(true);
-      expect(await fileExists(join(testDir, '.cursor', 'commands', 'local', 'disabled', 'test.md'))).toBe(false);
+      expect(await fileExists(join(testDir, '.cursor', 'commands', 'aipm', 'local', 'enabled', 'test.md'))).toBe(true);
+      expect(await fileExists(join(testDir, '.cursor', 'commands', 'aipm', 'local', 'disabled', 'test.md'))).toBe(
+        false,
+      );
     });
 
     test('clears marketplace directory before syncing', async () => {
@@ -123,7 +125,7 @@ describe('sync command', () => {
 
       await sync({ cwd: testDir });
 
-      const oldPluginPath = join(testDir, '.cursor', 'commands', 'local', 'plugin1', 'test.md');
+      const oldPluginPath = join(testDir, '.cursor', 'commands', 'aipm', 'local', 'plugin1', 'test.md');
       expect(await fileExists(oldPluginPath)).toBe(true);
 
       await createMockPlugin('plugin2');
@@ -139,8 +141,8 @@ describe('sync command', () => {
 
       await sync({ cwd: testDir });
 
-      expect(await fileExists(join(testDir, '.cursor', 'commands', 'local', 'plugin1', 'test.md'))).toBe(false);
-      expect(await fileExists(join(testDir, '.cursor', 'commands', 'local', 'plugin2', 'test.md'))).toBe(true);
+      expect(await fileExists(join(testDir, '.cursor', 'commands', 'aipm', 'local', 'plugin1', 'test.md'))).toBe(false);
+      expect(await fileExists(join(testDir, '.cursor', 'commands', 'aipm', 'local', 'plugin2', 'test.md'))).toBe(true);
     });
   });
 
@@ -345,8 +347,12 @@ describe('sync command', () => {
       await sync({ cwd: testDir });
 
       // Nothing should be synced
-      expect(await fileExists(join(testDir, '.cursor', 'commands', 'local', 'test-plugin', 'test.md'))).toBe(false);
-      expect(await fileExists(join(testDir, '.cursor', 'rules', 'local', 'test-plugin', 'test.mdc'))).toBe(false);
+      expect(await fileExists(join(testDir, '.cursor', 'commands', 'aipm', 'local', 'test-plugin', 'test.md'))).toBe(
+        false,
+      );
+      expect(await fileExists(join(testDir, '.cursor', 'rules', 'aipm', 'local', 'test-plugin', 'test.mdc'))).toBe(
+        false,
+      );
     });
 
     test('syncs all types when include is "all"', async () => {
@@ -370,11 +376,19 @@ describe('sync command', () => {
       await sync({ cwd: testDir });
 
       // All types should be synced
-      expect(await fileExists(join(testDir, '.cursor', 'commands', 'local', 'test-plugin', 'test.md'))).toBe(true);
-      expect(await fileExists(join(testDir, '.cursor', 'rules', 'local', 'test-plugin', 'test.mdc'))).toBe(true);
-      expect(await fileExists(join(testDir, '.cursor', 'agents', 'local', 'test-plugin', 'test.md'))).toBe(true);
-      expect(await fileExists(join(testDir, '.cursor', 'skills', 'local', 'test-plugin', 'test.md'))).toBe(true);
-      expect(await fileExists(join(testDir, '.cursor', 'hooks', 'local', 'test-plugin', 'test.md'))).toBe(true);
+      expect(await fileExists(join(testDir, '.cursor', 'commands', 'aipm', 'local', 'test-plugin', 'test.md'))).toBe(
+        true,
+      );
+      expect(await fileExists(join(testDir, '.cursor', 'rules', 'aipm', 'local', 'test-plugin', 'test.mdc'))).toBe(
+        true,
+      );
+      expect(await fileExists(join(testDir, '.cursor', 'agents', 'aipm', 'local', 'test-plugin', 'test.md'))).toBe(
+        true,
+      );
+      expect(await fileExists(join(testDir, '.cursor', 'skills', 'aipm', 'local', 'test-plugin', 'test.md'))).toBe(
+        true,
+      );
+      expect(await fileExists(join(testDir, '.cursor', 'hooks', 'aipm', 'local', 'test-plugin', 'test.md'))).toBe(true);
     });
 
     test('syncs only enabled types when include is object', async () => {
@@ -409,11 +423,15 @@ describe('sync command', () => {
       await sync({ cwd: testDir });
 
       // Only rules and commands should be synced
-      expect(await fileExists(join(testDir, '.cursor', 'commands', 'local', 'test-plugin', 'test.md'))).toBe(true);
-      expect(await fileExists(join(testDir, '.cursor', 'rules', 'local', 'test-plugin', 'test.mdc'))).toBe(true);
-      expect(await fileExists(join(testDir, '.cursor', 'agents', 'local', 'test-plugin'))).toBe(false);
-      expect(await fileExists(join(testDir, '.cursor', 'skills', 'local', 'test-plugin'))).toBe(false);
-      expect(await fileExists(join(testDir, '.cursor', 'hooks', 'local', 'test-plugin'))).toBe(false);
+      expect(await fileExists(join(testDir, '.cursor', 'commands', 'aipm', 'local', 'test-plugin', 'test.md'))).toBe(
+        true,
+      );
+      expect(await fileExists(join(testDir, '.cursor', 'rules', 'aipm', 'local', 'test-plugin', 'test.mdc'))).toBe(
+        true,
+      );
+      expect(await fileExists(join(testDir, '.cursor', 'agents', 'aipm', 'local', 'test-plugin'))).toBe(false);
+      expect(await fileExists(join(testDir, '.cursor', 'skills', 'aipm', 'local', 'test-plugin'))).toBe(false);
+      expect(await fileExists(join(testDir, '.cursor', 'hooks', 'aipm', 'local', 'test-plugin'))).toBe(false);
     });
 
     test('defaults to true for unspecified types in include object', async () => {
@@ -444,11 +462,17 @@ describe('sync command', () => {
       await sync({ cwd: testDir });
 
       // Everything except agents should be synced (default to true)
-      expect(await fileExists(join(testDir, '.cursor', 'commands', 'local', 'test-plugin', 'test.md'))).toBe(true);
-      expect(await fileExists(join(testDir, '.cursor', 'rules', 'local', 'test-plugin', 'test.mdc'))).toBe(true);
-      expect(await fileExists(join(testDir, '.cursor', 'skills', 'local', 'test-plugin', 'test.md'))).toBe(true);
-      expect(await fileExists(join(testDir, '.cursor', 'hooks', 'local', 'test-plugin', 'test.md'))).toBe(true);
-      expect(await fileExists(join(testDir, '.cursor', 'agents', 'local', 'test-plugin'))).toBe(false);
+      expect(await fileExists(join(testDir, '.cursor', 'commands', 'aipm', 'local', 'test-plugin', 'test.md'))).toBe(
+        true,
+      );
+      expect(await fileExists(join(testDir, '.cursor', 'rules', 'aipm', 'local', 'test-plugin', 'test.mdc'))).toBe(
+        true,
+      );
+      expect(await fileExists(join(testDir, '.cursor', 'skills', 'aipm', 'local', 'test-plugin', 'test.md'))).toBe(
+        true,
+      );
+      expect(await fileExists(join(testDir, '.cursor', 'hooks', 'aipm', 'local', 'test-plugin', 'test.md'))).toBe(true);
+      expect(await fileExists(join(testDir, '.cursor', 'agents', 'aipm', 'local', 'test-plugin'))).toBe(false);
     });
 
     test('syncs all types by default when no integrations config', async () => {
@@ -467,11 +491,19 @@ describe('sync command', () => {
       await sync({ cwd: testDir });
 
       // All types should be synced
-      expect(await fileExists(join(testDir, '.cursor', 'commands', 'local', 'test-plugin', 'test.md'))).toBe(true);
-      expect(await fileExists(join(testDir, '.cursor', 'rules', 'local', 'test-plugin', 'test.mdc'))).toBe(true);
-      expect(await fileExists(join(testDir, '.cursor', 'agents', 'local', 'test-plugin', 'test.md'))).toBe(true);
-      expect(await fileExists(join(testDir, '.cursor', 'skills', 'local', 'test-plugin', 'test.md'))).toBe(true);
-      expect(await fileExists(join(testDir, '.cursor', 'hooks', 'local', 'test-plugin', 'test.md'))).toBe(true);
+      expect(await fileExists(join(testDir, '.cursor', 'commands', 'aipm', 'local', 'test-plugin', 'test.md'))).toBe(
+        true,
+      );
+      expect(await fileExists(join(testDir, '.cursor', 'rules', 'aipm', 'local', 'test-plugin', 'test.mdc'))).toBe(
+        true,
+      );
+      expect(await fileExists(join(testDir, '.cursor', 'agents', 'aipm', 'local', 'test-plugin', 'test.md'))).toBe(
+        true,
+      );
+      expect(await fileExists(join(testDir, '.cursor', 'skills', 'aipm', 'local', 'test-plugin', 'test.md'))).toBe(
+        true,
+      );
+      expect(await fileExists(join(testDir, '.cursor', 'hooks', 'aipm', 'local', 'test-plugin', 'test.md'))).toBe(true);
     });
   });
 });

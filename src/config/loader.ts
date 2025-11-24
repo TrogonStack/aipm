@@ -105,7 +105,7 @@ export async function loadPluginsConfig(baseDir: string): Promise<PluginsConfigW
     const claudeCodeMarketplaces = await readClaudeCodeMarketplaces();
 
     for (const [marketplaceName, marketplaceConfig] of Object.entries(claudeCodeMarketplaces)) {
-      const prefixedName = `claude:${marketplaceName}`;
+      const prefixedName = `claude/${marketplaceName}`;
 
       if (
         globalConfig.marketplaces[prefixedName] ||

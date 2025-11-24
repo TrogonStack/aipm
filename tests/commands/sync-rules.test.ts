@@ -59,7 +59,7 @@ Rule content here.`,
 
     await sync({ cwd: testDir });
 
-    const outputPath = join(testDir, '.cursor', 'rules', 'local', 'test-plugin', 'my-rule.mdc');
+    const outputPath = join(testDir, '.cursor', 'rules', 'aipm', 'local', 'test-plugin', 'my-rule.mdc');
 
     expect(await fileExists(outputPath)).toBe(true);
 
@@ -103,7 +103,7 @@ setting: value
 
     await sync({ cwd: testDir });
 
-    const outputPath = join(testDir, '.cursor', 'rules', 'local', 'test-plugin', 'my-rule.mdc');
+    const outputPath = join(testDir, '.cursor', 'rules', 'aipm', 'local', 'test-plugin', 'my-rule.mdc');
 
     expect(await fileExists(outputPath)).toBe(true);
 
@@ -159,7 +159,7 @@ priority: high`,
 
     await sync({ cwd: testDir });
 
-    const outputPath = join(testDir, '.cursor', 'rules', 'local', 'test-plugin', 'my-rule.mdc');
+    const outputPath = join(testDir, '.cursor', 'rules', 'aipm', 'local', 'test-plugin', 'my-rule.mdc');
 
     expect(await fileExists(outputPath)).toBe(true);
 
@@ -227,7 +227,7 @@ alwaysApply: false
     await sync({ cwd: testDir });
 
     // Check rule with override
-    const overridePath = join(testDir, '.cursor', 'rules', 'local', 'test-plugin', 'rule-with-override.mdc');
+    const overridePath = join(testDir, '.cursor', 'rules', 'aipm', 'local', 'test-plugin', 'rule-with-override.mdc');
     expect(await fileExists(overridePath)).toBe(true);
     const overrideContent = await readFile(overridePath, 'utf-8');
     expect(overrideContent).toContain('cursorMode: strict');
@@ -235,7 +235,15 @@ alwaysApply: false
     expect(overrideContent).toContain('# Rule With Override');
 
     // Check rule without override
-    const noOverridePath = join(testDir, '.cursor', 'rules', 'local', 'test-plugin', 'rule-without-override.mdc');
+    const noOverridePath = join(
+      testDir,
+      '.cursor',
+      'rules',
+      'aipm',
+      'local',
+      'test-plugin',
+      'rule-without-override.mdc',
+    );
     expect(await fileExists(noOverridePath)).toBe(true);
     const noOverrideContent = await readFile(noOverridePath, 'utf-8');
     expect(noOverrideContent).toContain('alwaysApply: false');
@@ -270,7 +278,7 @@ alwaysApply: false
 
     await sync({ cwd: testDir });
 
-    const cursorYamlPath = join(testDir, '.cursor', 'rules', 'local', 'test-plugin', 'my-rule.cursor.yaml');
+    const cursorYamlPath = join(testDir, '.cursor', 'rules', 'aipm', 'local', 'test-plugin', 'my-rule.cursor.yaml');
 
     expect(await fileExists(cursorYamlPath)).toBe(false);
   });

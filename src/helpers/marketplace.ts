@@ -8,10 +8,10 @@ import { fileExists, JsonFileError, readJsonFile } from './fs';
 
 /**
  * Determines the marketplace type based on the marketplace name.
- * Claude Code marketplaces are prefixed with 'claude:'.
+ * Claude Code marketplaces are prefixed with 'claude/'.
  */
 export function getMarketplaceType(marketplaceName: string): MarketplaceType {
-  return marketplaceName.startsWith('claude:') ? 'claude' : 'aipm';
+  return marketplaceName.startsWith('claude/') ? 'claude' : 'aipm';
 }
 
 export async function loadAipmMarketplaceManifest(marketplacePath: string): Promise<MarketplaceManifest | null> {

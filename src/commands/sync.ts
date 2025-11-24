@@ -2,7 +2,7 @@ import { rm, stat } from 'node:fs/promises';
 import { join } from 'node:path';
 import { z } from 'zod';
 import { getNotInitializedMessage, loadPluginsConfig } from '../config/loader';
-import { DIR_MARKETPLACE, PLUGIN_SUBDIRS } from '../constants';
+import { DIR_AIPM_NAMESPACE, DIR_MARKETPLACE, PLUGIN_SUBDIRS } from '../constants';
 import { ensureDir, fileExists } from '../helpers/fs';
 import { resolveMarketplacePath } from '../helpers/git';
 import { defaultIO } from '../helpers/io';
@@ -81,13 +81,14 @@ export async function sync(options: SyncOptions = {}): Promise<void> {
         await rm(oldMarketplaceDir, { recursive: true, force: true });
       }
 
-      // Clear and recreate target directories to remove disabled plugins
+      // Clear and recreate aipm subdirectories to remove disabled plugins
+      // Only clears .cursor/<subdir>/aipm/, preserving user's own files
       for (const subdir of targetSubdirs) {
-        const subdirPath = join(targetDir, subdir);
-        if (await fileExists(subdirPath)) {
-          await rm(subdirPath, { recursive: true, force: true });
+        const aipmSubdirPath = join(targetDir, subdir, DIR_AIPM_NAMESPACE);
+        if (await fileExists(aipmSubdirPath)) {
+          await rm(aipmSubdirPath, { recursive: true, force: true });
         }
-        await ensureDir(subdirPath);
+        await ensureDir(aipmSubdirPath);
       }
     }
 
@@ -165,7 +166,7 @@ export async function sync(options: SyncOptions = {}): Promise<void> {
           const disabledSubdirs = PLUGIN_SUBDIRS.filter((subdir) => !isSubdirEnabled(subdir, includeConfig));
 
           for (const subdir of disabledSubdirs) {
-            const subdirPath = join(targetDir, subdir, marketplaceName, pluginName);
+            const subdirPath = join(targetDir, subdir, DIR_AIPM_NAMESPACE, marketplaceName, pluginName);
             if (await fileExists(subdirPath)) {
               await rm(subdirPath, { recursive: true, force: true });
             }

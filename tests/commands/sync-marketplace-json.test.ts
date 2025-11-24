@@ -77,7 +77,7 @@ describe('sync command with marketplace.json', () => {
 
     await sync({ cwd: testDir });
 
-    const commandsPath = join(testDir, '.cursor', 'commands', 'curated', 'my-plugin', 'test.md');
+    const commandsPath = join(testDir, '.cursor', 'commands', 'aipm', 'curated', 'my-plugin', 'test.md');
     expect(await fileExists(commandsPath)).toBe(true);
   });
 
@@ -97,7 +97,7 @@ describe('sync command with marketplace.json', () => {
 
     await sync({ cwd: testDir });
 
-    const commandsPath = join(testDir, '.cursor', 'commands', 'unstructured', 'my-plugin', 'test.md');
+    const commandsPath = join(testDir, '.cursor', 'commands', 'aipm', 'unstructured', 'my-plugin', 'test.md');
     expect(await fileExists(commandsPath)).toBe(true);
   });
 
@@ -136,13 +136,13 @@ describe('sync command with marketplace.json', () => {
 
     await sync({ cwd: testDir });
 
-    expect(await fileExists(join(testDir, '.cursor', 'commands', 'selective', 'included-plugin', 'test.md'))).toBe(
-      true,
-    );
+    expect(
+      await fileExists(join(testDir, '.cursor', 'commands', 'aipm', 'selective', 'included-plugin', 'test.md')),
+    ).toBe(true);
 
-    expect(await fileExists(join(testDir, '.cursor', 'commands', 'selective', 'excluded-plugin', 'test.md'))).toBe(
-      false,
-    );
+    expect(
+      await fileExists(join(testDir, '.cursor', 'commands', 'aipm', 'selective', 'excluded-plugin', 'test.md')),
+    ).toBe(false);
   });
 
   test('handles nested plugin paths in marketplace.json', async () => {
@@ -174,7 +174,9 @@ describe('sync command with marketplace.json', () => {
 
     await sync({ cwd: testDir });
 
-    expect(await fileExists(join(testDir, '.cursor', 'commands', 'monorepo', 'analyzer', 'test.md'))).toBe(true);
+    expect(await fileExists(join(testDir, '.cursor', 'commands', 'aipm', 'monorepo', 'analyzer', 'test.md'))).toBe(
+      true,
+    );
   });
 
   test('syncs multiple plugins with different paths', async () => {
@@ -203,7 +205,7 @@ describe('sync command with marketplace.json', () => {
 
     await sync({ cwd: testDir });
 
-    expect(await fileExists(join(testDir, '.cursor', 'commands', 'mixed', 'plugin-a', 'test.md'))).toBe(true);
-    expect(await fileExists(join(testDir, '.cursor', 'commands', 'mixed', 'plugin-b', 'test.md'))).toBe(true);
+    expect(await fileExists(join(testDir, '.cursor', 'commands', 'aipm', 'mixed', 'plugin-a', 'test.md'))).toBe(true);
+    expect(await fileExists(join(testDir, '.cursor', 'commands', 'aipm', 'mixed', 'plugin-b', 'test.md'))).toBe(true);
   });
 });

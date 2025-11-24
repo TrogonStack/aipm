@@ -50,7 +50,7 @@ aipm sync
 
    ```bash
    # For git marketplaces, clone and inspect
-   git clone <marketplace-url> /tmp/check-marketplace
+   git clone {marketplace-url} /tmp/check-marketplace
    cat /tmp/check-marketplace/marketplace.json
    ```
 
@@ -89,8 +89,9 @@ aipm sync
 4. **Check plugin files**:
 
    ```bash
-   # Files should exist in .cursor/marketplace/
-   ls -la .cursor/marketplace/my-marketplace/my-plugin/
+   # Files should exist in .cursor/{type}/aipm/
+   ls -la .cursor/commands/aipm/my-marketplace/my-plugin/
+   ls -la .cursor/rules/aipm/my-marketplace/my-plugin/
    ```
 
 5. **Restart Claude Code** (if using with Claude Code)
@@ -106,7 +107,7 @@ aipm sync
 1. **Test git access**:
 
    ```bash
-   git clone <repository-url> /tmp/test-clone
+   git clone {repository-url} /tmp/test-clone
    ```
 
 2. **Check SSH keys** (for SSH URLs):
@@ -125,7 +126,7 @@ aipm sync
 
 4. **Check branch exists**:
    ```bash
-   git ls-remote <repository-url>
+   git ls-remote {repository-url}
    ```
 
 ---
@@ -189,7 +190,7 @@ aipm sync
 
 3. **Check git repository is accessible**:
    ```bash
-   git ls-remote <repository-url>
+   git ls-remote {repository-url}
    ```
 
 ---
@@ -218,10 +219,10 @@ aipm sync
 3. **Don't use sudo**:
 
    ```bash
-   # ? Don't do this
+   # BAD - Don't do this
    sudo aipm install ...
 
-   # ? Do this
+   # GOOD - Do this
    aipm install ...
    ```
 
@@ -278,19 +279,17 @@ dir "%LOCALAPPDATA%\aipm\cache\my-marketplace"
 ### Check Synced Files
 
 ```bash
-# Project-level
-ls -la .cursor/marketplace/
+# Project-level (plugin files are split by type)
+ls -la .cursor/commands/aipm/
+ls -la .cursor/rules/aipm/
 
 # Check specific plugin files
-find .cursor/marketplace/ -name "*.md"
+find .cursor/*/aipm/ -name "*.md"
 ```
 
 ### Manual Validation
 
 ```bash
-# Check plugin.json is valid
-cat .cursor/marketplace/my-marketplace/my-plugin/.claude-plugin/plugin.json | jq .
-
 # Check marketplace.json is valid
 # Linux/macOS
 cat ~/.cache/aipm/my-marketplace/marketplace.json | jq .

@@ -49,7 +49,7 @@ describe('plugin-update', () => {
 
       await pluginUpdate(options);
 
-      const updatedCommandPath = join(testDir, '.cursor', 'commands', 'local', 'test-plugin', 'updated.md');
+      const updatedCommandPath = join(testDir, '.cursor', 'commands', 'aipm', 'local', 'test-plugin', 'updated.md');
       expect(await fileExists(updatedCommandPath)).toBe(true);
     });
 
@@ -179,8 +179,8 @@ describe('plugin-update', () => {
         }),
       );
 
-      await mkdir(join(testDir, '.cursor', 'commands', 'local', 'test-plugin'), { recursive: true });
-      await writeFile(join(testDir, '.cursor', 'commands', 'local', 'test-plugin', 'test.md'), '# Old version');
+      await mkdir(join(testDir, '.cursor', 'commands', 'aipm', 'local', 'test-plugin'), { recursive: true });
+      await writeFile(join(testDir, '.cursor', 'commands', 'aipm', 'local', 'test-plugin', 'test.md'), '# Old version');
 
       const options = {
         pluginId: 'test-plugin@local',
@@ -190,7 +190,7 @@ describe('plugin-update', () => {
 
       await pluginUpdate(options);
 
-      const newCommandPath = join(testDir, '.cursor', 'commands', 'local', 'test-plugin', 'new.md');
+      const newCommandPath = join(testDir, '.cursor', 'commands', 'aipm', 'local', 'test-plugin', 'new.md');
       expect(await fileExists(newCommandPath)).toBe(false);
     });
   });
@@ -248,7 +248,7 @@ describe('plugin-update', () => {
 
       await pluginUpdate(options);
 
-      const updatedCommandPath = join(testDir, '.cursor', 'commands', 'local', 'custom-plugin', 'updated.md');
+      const updatedCommandPath = join(testDir, '.cursor', 'commands', 'aipm', 'local', 'custom-plugin', 'updated.md');
       expect(await fileExists(updatedCommandPath)).toBe(true);
     });
   });

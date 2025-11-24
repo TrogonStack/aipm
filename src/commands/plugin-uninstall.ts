@@ -2,8 +2,8 @@ import { rm } from 'node:fs/promises';
 import { join } from 'node:path';
 import { z } from 'zod';
 import { getConfigPath, getNotInitializedMessage, loadPluginsConfig } from '../config/loader';
-import { DIR_CURSOR, DIR_MARKETPLACE, FILE_AIPM_CONFIG, FILE_AIPM_CONFIG_LOCAL } from '../constants';
-import { saveConfig } from '../helpers/aipm-config';
+import { DIR_AIPM_NAMESPACE, DIR_CURSOR, FILE_AIPM_CONFIG, FILE_AIPM_CONFIG_LOCAL, PLUGIN_SUBDIRS } from '../constants';
+import { loadTargetConfig, saveConfig } from '../helpers/aipm-config';
 import { fileExists } from '../helpers/fs';
 import { defaultIO } from '../helpers/io';
 
@@ -29,26 +29,34 @@ export async function pluginUninstall(options: unknown): Promise<void> {
       throw error;
     }
     const configName = cmd.local ? getConfigPath(FILE_AIPM_CONFIG_LOCAL) : getConfigPath(FILE_AIPM_CONFIG);
+    const targetConfig = await loadTargetConfig(cwd, cmd.local);
 
-    if (!config.plugins[cmd.pluginId]) {
+    if (!targetConfig.plugins[cmd.pluginId]) {
+      if (config.plugins[cmd.pluginId]) {
+        const error = new Error(
+          `Plugin '${cmd.pluginId}' is not in ${configName} (exists in merged config from another source)`,
+        );
+        defaultIO.logError(error.message);
+        throw error;
+      }
       const error = new Error(`Plugin '${cmd.pluginId}' is not installed`);
       defaultIO.logError(error.message);
       throw error;
     }
 
-    const { [cmd.pluginId]: _removed, ...remainingPlugins } = config.plugins;
-
-    const updatedConfig = {
-      ...config,
-      plugins: remainingPlugins,
-    };
-
     if (cmd.dryRun) {
       defaultIO.logInfo(`[DRY RUN] Would remove plugin '${cmd.pluginId}' from ${configName}`);
       if (cmd.removeFiles) {
-        defaultIO.logInfo('[DRY RUN] Would delete files from .cursor/marketplace/');
+        defaultIO.logInfo('[DRY RUN] Would delete plugin files from .cursor/');
       }
     } else {
+      const { [cmd.pluginId]: _removed, ...remainingPlugins } = targetConfig.plugins;
+
+      const updatedConfig = {
+        ...targetConfig,
+        plugins: remainingPlugins,
+      };
+
       await saveConfig(cwd, updatedConfig, cmd.local);
       defaultIO.logSuccess(`Removed plugin '${cmd.pluginId}' from ${configName}`);
 
@@ -56,11 +64,19 @@ export async function pluginUninstall(options: unknown): Promise<void> {
         const [pluginName, marketplaceName] = cmd.pluginId.split('@');
 
         if (pluginName && marketplaceName) {
-          const installedPath = join(cwd, DIR_CURSOR, DIR_MARKETPLACE, marketplaceName, pluginName);
+          let deletedCount = 0;
 
-          if (await fileExists(installedPath)) {
-            await rm(installedPath, { recursive: true, force: true });
-            defaultIO.logSuccess(`Deleted plugin files from .cursor/marketplace/${marketplaceName}/${pluginName}`);
+          for (const subdir of PLUGIN_SUBDIRS) {
+            const installedPath = join(cwd, DIR_CURSOR, subdir, DIR_AIPM_NAMESPACE, marketplaceName, pluginName);
+
+            if (await fileExists(installedPath)) {
+              await rm(installedPath, { recursive: true, force: true });
+              deletedCount++;
+            }
+          }
+
+          if (deletedCount > 0) {
+            defaultIO.logSuccess(`Deleted plugin files from ${deletedCount} location(s) in .cursor/`);
           }
         }
       }
