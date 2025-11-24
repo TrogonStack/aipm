@@ -10,7 +10,7 @@ import {
   readClaudeCodeInstalledPlugins,
   readClaudeCodeMarketplaces,
 } from '../../src/helpers/claude-code-config';
-import { setupTestEnvironment, type TestSetup } from './test-setup';
+import { setupTestEnvironment, type TestSetup } from './test-support';
 
 describe('Claude Code Config Reader', () => {
   let setup: TestSetup;

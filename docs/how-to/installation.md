@@ -204,8 +204,15 @@ sudo cp dist/aipm-*/bin/aipm /usr/local/bin/
 sudo rm /usr/local/bin/aipm
 
 # Clean up config (optional)
-rm -rf ~/.aipm
+# Linux/macOS
+rm -rf ~/.config/aipm
+rm -rf ~/.cache/aipm
 rm -rf .aipm  # In project directories
+
+# Windows
+rmdir /s /q "%APPDATA%\aipm"
+rmdir /s /q "%LOCALAPPDATA%\aipm"
+rmdir /s /q .aipm
 ```
 
 ## Next Steps

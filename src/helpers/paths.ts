@@ -1,5 +1,6 @@
+import { homedir } from 'node:os';
 import { join } from 'node:path';
-import { AIPM_GLOBAL_DEFAULT, DIR_CACHE } from '../constants';
+import { DIR_CACHE } from '../constants';
 import { ProcessEnvSchema, type ProcessEnv } from '../schema';
 
 /**
@@ -31,23 +32,10 @@ export function resetEnvCache(): void {
 }
 
 /**
- * Get the home directory from environment variables
- * Throws if neither HOME nor USERPROFILE is set
- */
-export function getHomeDir(): string {
-  const env = getEnv();
-  const homeDir = env.HOME || env.USERPROFILE;
-
-  if (!homeDir) {
-    throw new Error('Could not determine home directory: HOME and USERPROFILE are not set');
-  }
-
-  return homeDir;
-}
-
-/**
- * Get the global directory for AIPM
- * Defaults to ~/.aipm
+ * Get the global config directory for AIPM
+ * Follows XDG Base Directory Specification
+ * - Linux/macOS: $XDG_CONFIG_HOME/aipm (default: ~/.config/aipm)
+ * - Windows: %APPDATA%\aipm
  */
 export function getGlobalDir(override?: string): string {
   if (override) {
@@ -55,18 +43,46 @@ export function getGlobalDir(override?: string): string {
   }
 
   const env = getEnv();
-  if (env.AIPM_GLOBAL_DIR) {
-    return env.AIPM_GLOBAL_DIR;
+  const homeDir = homedir();
+
+  // Windows: Use APPDATA or fallback to homeDir\aipm
+  if (process.platform === 'win32') {
+    if (env.APPDATA) {
+      return join(env.APPDATA, 'aipm');
+    }
+    // Fallback for Windows when APPDATA is not set
+    return join(homeDir, 'aipm');
   }
 
-  const homeDir = getHomeDir();
-  return join(homeDir, AIPM_GLOBAL_DEFAULT); // ~/.aipm
+  // Linux/macOS: Use XDG_CONFIG_HOME with fallback to ~/.config
+  const configHome = env.XDG_CONFIG_HOME || join(homeDir, '.config');
+  return join(configHome, 'aipm');
 }
 
 /**
  * Get the global cache directory for git marketplaces
+ * Follows XDG Base Directory Specification
+ * - Linux/macOS: $XDG_CACHE_HOME/aipm (default: ~/.cache/aipm)
+ * - Windows: %LOCALAPPDATA%\aipm\cache
  */
 export function getGlobalCacheDir(override?: string): string {
-  const globalDir = getGlobalDir(override);
-  return join(globalDir, DIR_CACHE); // ~/.aipm/cache/
+  if (override) {
+    return join(override, DIR_CACHE);
+  }
+
+  const env = getEnv();
+  const homeDir = homedir();
+
+  // Windows: Use LOCALAPPDATA or fallback to homeDir\aipm\cache
+  if (process.platform === 'win32') {
+    if (env.LOCALAPPDATA) {
+      return join(env.LOCALAPPDATA, 'aipm', DIR_CACHE);
+    }
+    // Fallback for Windows when LOCALAPPDATA is not set
+    return join(homeDir, 'aipm', DIR_CACHE);
+  }
+
+  // Linux/macOS: Use XDG_CACHE_HOME with fallback to ~/.cache
+  const cacheHome = env.XDG_CACHE_HOME || join(homeDir, '.cache');
+  return join(cacheHome, 'aipm');
 }
