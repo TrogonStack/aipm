@@ -130,7 +130,7 @@ describe('plugin-uninstall', () => {
         }),
       );
 
-      const pluginDir = join(testDir, '.cursor', 'marketplace', 'local', 'my-plugin');
+      const pluginDir = join(testDir, '.cursor', 'commands', 'aipm', 'local', 'my-plugin');
       await mkdir(pluginDir, { recursive: true });
       await writeFile(join(pluginDir, 'test.txt'), 'test content');
 
@@ -164,7 +164,7 @@ describe('plugin-uninstall', () => {
         }),
       );
 
-      const pluginDir = join(testDir, '.cursor', 'marketplace', 'local', 'my-plugin');
+      const pluginDir = join(testDir, '.cursor', 'commands', 'aipm', 'local', 'my-plugin');
       await mkdir(pluginDir, { recursive: true });
       await writeFile(join(pluginDir, 'test.txt'), 'test content');
 
@@ -248,7 +248,7 @@ describe('plugin-uninstall', () => {
         }),
       );
 
-      const pluginDir = join(testDir, '.cursor', 'marketplace', 'local', 'my-plugin');
+      const pluginDir = join(testDir, '.cursor', 'commands', 'aipm', 'local', 'my-plugin');
       await mkdir(pluginDir, { recursive: true });
       await writeFile(join(pluginDir, 'test.txt'), 'test content');
 
@@ -289,7 +289,7 @@ describe('plugin-uninstall', () => {
         }),
       );
 
-      const pluginDir = join(testDir, '.cursor', 'marketplace');
+      const pluginDir = join(testDir, '.cursor', 'commands', 'aipm');
       await mkdir(pluginDir, { recursive: true });
 
       const options = {

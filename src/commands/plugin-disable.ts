@@ -1,7 +1,8 @@
+import merge from 'lodash.merge';
 import { z } from 'zod';
 import { getConfigPath, getNotInitializedMessage, loadPluginsConfig } from '../config/loader';
 import { FILE_AIPM_CONFIG, FILE_AIPM_CONFIG_LOCAL } from '../constants';
-import { saveConfig } from '../helpers/aipm-config';
+import { loadTargetConfig, saveConfig } from '../helpers/aipm-config';
 import { defaultIO } from '../helpers/io';
 
 const PluginDisableOptionsSchema = z.object({
@@ -37,23 +38,18 @@ export async function pluginDisable(options: unknown): Promise<void> {
       return;
     }
 
-    const updatedConfig = {
-      ...config,
-      plugins: {
-        ...config.plugins,
-        [cmd.pluginId]: {
-          ...config.plugins[cmd.pluginId],
-          enabled: false,
-        },
-      },
-    };
-
     if (cmd.dryRun) {
       defaultIO.logInfo(`[DRY RUN] Would disable plugin '${cmd.pluginId}' in ${configName}`);
-    } else {
-      await saveConfig(cwd, updatedConfig, cmd.local);
-      defaultIO.logSuccess(`Disabled plugin '${cmd.pluginId}' in ${configName}`);
+      return;
     }
+
+    const targetConfig = await loadTargetConfig(cwd, cmd.local);
+    const updatedConfig = merge({}, targetConfig, {
+      plugins: { [cmd.pluginId]: { enabled: false } },
+    });
+
+    await saveConfig(cwd, updatedConfig, cmd.local);
+    defaultIO.logSuccess(`Disabled plugin '${cmd.pluginId}' in ${configName}`);
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error);
     defaultIO.logError(`Failed to disable plugin: ${message}`);

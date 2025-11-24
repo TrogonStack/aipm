@@ -51,7 +51,7 @@ describe('plugin-install', () => {
       expect(config.plugins['test-plugin@local']).toBeDefined();
       expect(config.plugins['test-plugin@local'].enabled).toBe(true);
 
-      const commandsPath = join(testDir, '.cursor', 'commands', 'local', 'test-plugin', 'test.md');
+      const commandsPath = join(testDir, '.cursor', 'commands', 'aipm', 'local', 'test-plugin', 'test.md');
       expect(await fileExists(commandsPath)).toBe(true);
     });
 
@@ -200,7 +200,7 @@ describe('plugin-install', () => {
 
       await pluginInstall(options);
 
-      const commandsPath = join(testDir, '.cursor', 'commands', 'local', 'test-plugin', 'test.md');
+      const commandsPath = join(testDir, '.cursor', 'commands', 'aipm', 'local', 'test-plugin', 'test.md');
       expect(await fileExists(commandsPath)).toBe(true);
     });
   });
@@ -293,7 +293,7 @@ describe('plugin-install', () => {
       const config = JSON.parse(await Bun.file(pluginsPath).text());
       expect(config).toEqual(originalConfig);
 
-      const commandsPath = join(testDir, '.cursor', 'commands', 'local', 'test-plugin');
+      const commandsPath = join(testDir, '.cursor', 'commands', 'aipm', 'local', 'test-plugin');
       expect(await fileExists(commandsPath)).toBe(false);
     });
   });
@@ -348,7 +348,7 @@ describe('plugin-install', () => {
 
       await pluginInstall(options);
 
-      const commandsPath = join(testDir, '.cursor', 'commands', 'local', 'custom-plugin', 'test.md');
+      const commandsPath = join(testDir, '.cursor', 'commands', 'aipm', 'local', 'custom-plugin', 'test.md');
       expect(await fileExists(commandsPath)).toBe(true);
     });
   });

@@ -67,7 +67,7 @@ aipm init --global
 
 ### `sync`
 
-Sync all enabled plugins from marketplaces to `.cursor/marketplace/`.
+Sync all enabled plugins from marketplaces to `.cursor/` (commands, rules, agents, skills, hooks).
 
 **Usage**:
 
@@ -95,7 +95,7 @@ aipm sync --dry-run
 1. Loads configuration (three-way merge)
 2. For each enabled plugin:
    - Resolves marketplace path (clones/pulls git repos)
-   - Copies plugin files to `.cursor/marketplace/{marketplace}/{plugin}/`
+   - Copies plugin files to `.cursor/{type}/aipm/{marketplace}/{plugin}/` (where type is commands, rules, agents, skills, or hooks)
 3. Reports success/failures
 
 **Exit codes**:
@@ -528,11 +528,11 @@ aipm list
 **Example output**:
 
 ```
-? Marketplaces:
+Marketplaces:
   - team-plugins: git@github.com:acme/plugins.git
   - local: ./my-plugins
 
-? Installed Plugins:
+Installed Plugins:
   - code-reviewer@team-plugins (enabled, v1.2.0)
   - test-gen@local (disabled, v1.0.0)
 ```

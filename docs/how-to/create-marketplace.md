@@ -238,7 +238,7 @@ See [Working with Monorepos](./monorepo-marketplace.md) for details.
 Check access:
 
 ```bash
-git clone <repository-url>
+git clone {repository-url}
 ```
 
 ### "Permission denied"

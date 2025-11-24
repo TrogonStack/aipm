@@ -1,5 +1,6 @@
 import { cp, readdir, readFile, writeFile } from 'node:fs/promises';
 import { basename, extname, join } from 'node:path';
+import { DIR_AIPM_NAMESPACE } from '../constants';
 import { DirectoryNotFoundError, isFileNotFoundError } from '../errors';
 import { applyCursorFrontmatter } from './frontmatter';
 import { ensureDir, fileExists } from './fs';
@@ -14,11 +15,11 @@ export type SyncResult = {
 
 /**
  * Syncs a plugin to the correct Cursor directories:
- * - commands/*.md → .cursor/commands/marketplace-name/plugin-name/
- * - rules/*.mdc → .cursor/rules/marketplace-name/plugin-name/
- * - agents/*.md → .cursor/agents/marketplace-name/plugin-name/
- * - skills/*.md → .cursor/skills/marketplace-name/plugin-name/
- * - hooks/* → .cursor/hooks/marketplace-name/plugin-name/
+ * - commands/*.md → .cursor/commands/aipm/marketplace-name/plugin-name/
+ * - rules/*.mdc → .cursor/rules/aipm/marketplace-name/plugin-name/
+ * - agents/*.md → .cursor/agents/aipm/marketplace-name/plugin-name/
+ * - skills/*.md → .cursor/skills/aipm/marketplace-name/plugin-name/
+ * - hooks/* → .cursor/hooks/aipm/marketplace-name/plugin-name/
  */
 export async function syncPluginToCursor(
   pluginPath: string,
@@ -34,42 +35,42 @@ export async function syncPluginToCursor(
     hooksCount: 0,
   };
 
-  // Sync commands/*.md to .cursor/commands/marketplace/plugin/
+  // Sync commands/*.md to .cursor/commands/aipm/marketplace/plugin/
   const commandsResult = await syncDirectory(
     join(pluginPath, 'commands'),
-    join(cursorDir, 'commands', marketplaceName, pluginName),
+    join(cursorDir, 'commands', DIR_AIPM_NAMESPACE, marketplaceName, pluginName),
     ['.md'],
   );
   result.commandsCount = commandsResult;
 
-  // Sync rules/*.md and *.mdc to .cursor/rules/marketplace/plugin/
+  // Sync rules/*.md and *.mdc to .cursor/rules/aipm/marketplace/plugin/
   // Apply .cursor.yaml frontmatter overrides if they exist
   const rulesResult = await syncRulesDirectory(
     join(pluginPath, 'rules'),
-    join(cursorDir, 'rules', marketplaceName, pluginName),
+    join(cursorDir, 'rules', DIR_AIPM_NAMESPACE, marketplaceName, pluginName),
   );
   result.rulesCount = rulesResult;
 
-  // Sync agents/*.md to .cursor/agents/marketplace/plugin/
+  // Sync agents/*.md to .cursor/agents/aipm/marketplace/plugin/
   const agentsResult = await syncDirectory(
     join(pluginPath, 'agents'),
-    join(cursorDir, 'agents', marketplaceName, pluginName),
+    join(cursorDir, 'agents', DIR_AIPM_NAMESPACE, marketplaceName, pluginName),
     ['.md'],
   );
   result.agentsCount = agentsResult;
 
-  // Sync skills/*.md to .cursor/skills/marketplace/plugin/
+  // Sync skills/*.md to .cursor/skills/aipm/marketplace/plugin/
   const skillsResult = await syncDirectory(
     join(pluginPath, 'skills'),
-    join(cursorDir, 'skills', marketplaceName, pluginName),
+    join(cursorDir, 'skills', DIR_AIPM_NAMESPACE, marketplaceName, pluginName),
     ['.md'],
   );
   result.skillsCount = skillsResult;
 
-  // Sync hooks/* to .cursor/hooks/marketplace/plugin/
+  // Sync hooks/* to .cursor/hooks/aipm/marketplace/plugin/
   const hooksResult = await syncDirectory(
     join(pluginPath, 'hooks'),
-    join(cursorDir, 'hooks', marketplaceName, pluginName),
+    join(cursorDir, 'hooks', DIR_AIPM_NAMESPACE, marketplaceName, pluginName),
     [], // Copy all files in hooks
   );
   result.hooksCount = hooksResult;

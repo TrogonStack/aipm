@@ -34,7 +34,7 @@ export async function list(options: ListOptions = {}): Promise<void> {
     if (marketplaceCount > 0) {
       console.log('\n📦 Marketplaces:');
       for (const [name, marketplace] of Object.entries(config.marketplaces)) {
-        const isClaudeMarketplace = name.startsWith('claude:');
+        const isClaudeMarketplace = name.startsWith('claude/');
         const sourceLabel = isClaudeMarketplace ? '🤖 Claude Code (auto-discovered)' : marketplace.source;
 
         console.log(`  • ${name}`);

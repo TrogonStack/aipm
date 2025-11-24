@@ -75,7 +75,7 @@ describe('sync command with git sources', () => {
 
     await sync({ cwd: testDir });
 
-    const commandsPath = join(testDir, '.cursor', 'commands', 'git', 'git-plugin', 'test.md');
+    const commandsPath = join(testDir, '.cursor', 'commands', 'aipm', 'git', 'git-plugin', 'test.md');
     expect(await fileExists(commandsPath)).toBe(true);
   });
 
@@ -97,9 +97,9 @@ describe('sync command with git sources', () => {
 
     await sync({ cwd: testDir });
 
-    expect(await fileExists(join(testDir, '.cursor', 'commands', 'git', 'plugin-a', 'test.md'))).toBe(true);
-    expect(await fileExists(join(testDir, '.cursor', 'commands', 'git', 'plugin-b', 'test.md'))).toBe(true);
-    expect(await fileExists(join(testDir, '.cursor', 'commands', 'git', 'plugin-c', 'test.md'))).toBe(false);
+    expect(await fileExists(join(testDir, '.cursor', 'commands', 'aipm', 'git', 'plugin-a', 'test.md'))).toBe(true);
+    expect(await fileExists(join(testDir, '.cursor', 'commands', 'aipm', 'git', 'plugin-b', 'test.md'))).toBe(true);
+    expect(await fileExists(join(testDir, '.cursor', 'commands', 'aipm', 'git', 'plugin-c', 'test.md'))).toBe(false);
   });
 
   test('pulls updates from git marketplace on subsequent syncs', async () => {
@@ -118,7 +118,7 @@ describe('sync command with git sources', () => {
 
     await sync({ cwd: testDir });
 
-    const commandsPath = join(testDir, '.cursor', 'commands', 'git', 'update-plugin', 'test.md');
+    const commandsPath = join(testDir, '.cursor', 'commands', 'aipm', 'git', 'update-plugin', 'test.md');
     expect(await fileExists(commandsPath)).toBe(true);
 
     await writeFile(join(gitRepoDir, 'update-plugin', 'commands', 'new-file.md'), '# New');
@@ -129,7 +129,7 @@ describe('sync command with git sources', () => {
 
     await sync({ cwd: testDir });
 
-    const newFilePath = join(testDir, '.cursor', 'commands', 'git', 'update-plugin', 'new-file.md');
+    const newFilePath = join(testDir, '.cursor', 'commands', 'aipm', 'git', 'update-plugin', 'new-file.md');
     expect(await fileExists(newFilePath)).toBe(true);
   });
 
@@ -157,7 +157,7 @@ describe('sync command with git sources', () => {
 
     await sync({ cwd: testDir });
 
-    const featurePath = join(testDir, '.cursor', 'commands', 'git', 'branch-plugin', 'feature.md');
+    const featurePath = join(testDir, '.cursor', 'commands', 'aipm', 'git', 'branch-plugin', 'feature.md');
     expect(await fileExists(featurePath)).toBe(true);
   });
 
@@ -196,8 +196,10 @@ describe('sync command with git sources', () => {
 
     await sync({ cwd: testDir });
 
-    expect(await fileExists(join(testDir, '.cursor', 'commands', 'git', 'git-plugin', 'test.md'))).toBe(true);
-    expect(await fileExists(join(testDir, '.cursor', 'commands', 'local', 'local-plugin', 'local-test.md'))).toBe(true);
+    expect(await fileExists(join(testDir, '.cursor', 'commands', 'aipm', 'git', 'git-plugin', 'test.md'))).toBe(true);
+    expect(
+      await fileExists(join(testDir, '.cursor', 'commands', 'aipm', 'local', 'local-plugin', 'local-test.md')),
+    ).toBe(true);
   });
 
   test('handles git marketplace without url gracefully', async () => {
@@ -233,6 +235,6 @@ describe('sync command with git sources', () => {
     await sync({ cwd: testDir, dryRun: true });
 
     expect(await fileExists(join(cacheDir, 'git'))).toBe(false);
-    expect(await fileExists(join(testDir, '.cursor', 'commands', 'git', 'dry-plugin'))).toBe(false);
+    expect(await fileExists(join(testDir, '.cursor', 'commands', 'aipm', 'git', 'dry-plugin'))).toBe(false);
   });
 });
