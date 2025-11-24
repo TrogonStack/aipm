@@ -57,12 +57,12 @@ If you have Claude Code installed, **AIPM automatically discovers its marketplac
 aipm list
 
 📦 Marketplaces:
-  • claude:anthropic-agent-skills (🤖 Claude Code auto-discovered)
-  • claude:claude-code-workflows (🤖 Claude Code auto-discovered)
+  • claude/anthropic-agent-skills (🤖 Claude Code auto-discovered)
+  • claude/claude-code-workflows (🤖 Claude Code auto-discovered)
 
 # Install Claude Code plugins to Cursor
-aipm plugin install algorithmic-art@claude:anthropic-agent-skills
-aipm plugin install document-skills/docx@claude:anthropic-agent-skills
+aipm plugin install algorithmic-art@claude/anthropic-agent-skills
+aipm plugin install document-skills/docx@claude/anthropic-agent-skills
 aipm sync  # Installs to .cursor/ for Cursor to use
 ```
 

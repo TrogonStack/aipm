@@ -245,5 +245,3 @@ aipm marketplace add team git@github.com:owner/repo.git
 
 - [Tutorial: Getting Started](../tutorials/getting-started.md) - Learn aipm basics
 - [How-to: Create a Marketplace](./create-marketplace.md) - Build your own plugin marketplace
-- [Reference: Configuration](../reference/configuration.md) - Full config file reference
-- [Explanation: Configuration System](../explanation/configuration-system.md) - Understand how config merging works

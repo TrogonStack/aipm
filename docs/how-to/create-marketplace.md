@@ -227,8 +227,6 @@ my-team-plugins/
 ??? README.md
 ```
 
-See [Working with Monorepos](./monorepo-marketplace.md) for details.
-
 ---
 
 ## Troubleshooting
@@ -252,11 +250,3 @@ Team members must update:
 ```bash
 aipm marketplace update acme-eng
 ```
-
----
-
-## Related
-
-- [Tutorial: Team Marketplace Setup](../tutorials/team-marketplace.md)
-- [Explanation: Marketplace Types](../explanation/marketplace-types.md)
-- [Reference: Marketplace Schema](../reference/marketplace-manifest.md)

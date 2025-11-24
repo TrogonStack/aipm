@@ -130,11 +130,3 @@ graph LR
 | New command          | Create `src/commands/my-command.ts`, register in `cli.ts`     |
 | New marketplace type | Add to `MarketplaceSource`, update `resolveMarketplacePath()` |
 | New sync strategy    | Implement in `sync-strategy.ts`, add config option            |
-
----
-
-## Related
-
-- [Configuration System](./config-system.md)
-- [Git Cache Strategy](./git-cache.md)
-- [Plugin Lifecycle](./plugin-lifecycle.md)

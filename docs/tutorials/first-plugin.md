@@ -269,7 +269,6 @@ Now that you understand the basics, try:
 
 Continue to:
 
-- [Team Marketplace Tutorial](./team-marketplace.md) - Share with your team
 - [How to Create a Marketplace](../how-to/create-marketplace.md) - Advanced marketplace setup
 
 ---
