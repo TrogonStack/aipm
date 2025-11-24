@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.4](https://github.com/TrogonStack/aipm/compare/v0.4.3...v0.4.4) (2025-11-24)
+
+
+### Bug Fixes
+
+* locating plugin json file ([#37](https://github.com/TrogonStack/aipm/issues/37)) ([89fc5b7](https://github.com/TrogonStack/aipm/commit/89fc5b7b78fcfcbaabe2cf43289ed8db715200ba))
+
 ## [0.4.3](https://github.com/TrogonStack/aipm/compare/v0.4.2...v0.4.3) (2025-11-24)
 
 
