@@ -11,7 +11,7 @@ export class PluginManifestNotFoundError extends Error {
     public readonly pluginPath: string,
     options?: ErrorOptions,
   ) {
-    super('Plugin manifest not found: .claude-plugin/plugin.json is required', options);
+    super(`Plugin manifest not found: ${pluginPath}/.claude-plugin/plugin.json is required`, options);
     this.name = 'PluginManifestNotFoundError';
   }
 }

@@ -214,3 +214,43 @@ export function getPluginSourcePath(
 
   return join(marketplacePath, pluginName);
 }
+
+/**
+ * Resolves the plugin path from manifest or by searching recursively if no manifest exists.
+ *
+ * The marketplacePath is already resolved from installLocation in known_marketplaces.json,
+ * so we have the authoritative marketplace root. The manifest's source field supports n-level
+ * deep paths (e.g., "./available-plugins/code-review-ai"), so if the manifest exists and lists
+ * the plugin, we try its source path first.
+ *
+ * If the manifest path doesn't exist (e.g., incorrect source path), we fall back to recursive
+ * search to discover the plugin's actual location. Recursive search is also used when no manifest
+ * exists (for auto-discovery).
+ */
+export async function resolvePluginPath(
+  marketplacePath: string,
+  pluginName: string,
+  manifest: MarketplaceManifest | null,
+): Promise<string> {
+  // If manifest exists and lists the plugin, try its source path first
+  if (manifest && isPluginInManifest(pluginName, manifest)) {
+    const manifestPath = getPluginSourcePath(marketplacePath, pluginName, manifest);
+    // Verify the manifest path actually exists
+    if (await fileExists(manifestPath)) {
+      return manifestPath;
+    }
+    // Manifest path doesn't exist (incorrect source), fall through to recursive search
+  }
+
+  // Search recursively when:
+  // 1. No manifest exists (auto-discovery)
+  // 2. Manifest exists but path doesn't exist (incorrect source path)
+  const availablePlugins = await getAvailablePlugins(marketplacePath, null);
+  const matchingPlugin = availablePlugins.find((p) => p === pluginName || p.split('/').pop() === pluginName);
+  if (matchingPlugin) {
+    return join(marketplacePath, matchingPlugin);
+  }
+
+  // Fallback: return path based on plugin name or manifest source (even if it doesn't exist)
+  return getPluginSourcePath(marketplacePath, pluginName, manifest);
+}
