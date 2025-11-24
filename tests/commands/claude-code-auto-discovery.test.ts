@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { init } from '../../src/commands/init';
 import { list } from '../../src/commands/list';
 import { loadPluginsConfig } from '../../src/config/loader';
-import { setupTestEnvironment } from '../helpers/test-setup';
+import { setupTestEnvironment } from '../helpers/test-support';
 
 describe('Claude Code Auto-Discovery Integration', () => {
   let testHome: string;

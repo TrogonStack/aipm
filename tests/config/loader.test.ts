@@ -3,7 +3,7 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { loadPluginsConfig } from '../../src/config/loader';
 import { getGlobalDir } from '../../src/helpers/paths';
-import { setupTestEnvironment, type TestSetup } from '../helpers/test-setup';
+import { setupTestEnvironment, type TestSetup } from '../helpers/test-support';
 
 describe('loadPluginsConfig', () => {
   let setup: TestSetup;

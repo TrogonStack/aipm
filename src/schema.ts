@@ -114,16 +114,13 @@ export type InitOptions = {
 
 /**
  * Schema for AIPM environment variables
+ *
+ * Simple validation schema - all defaults and platform-specific logic
+ * are handled by path helpers, not in the schema.
  */
 export const ProcessEnvSchema = z.object({
   /**
-   * Override the global AIPM directory
-   * Default: ~/.cursor/marketplace
-   */
-  AIPM_GLOBAL_DIR: z.string().optional(),
-
-  /**
-   * User's home directory (Unix/Mac)
+   * User's home directory (Unix/Mac/Windows)
    */
   HOME: z.string().optional(),
 
@@ -131,6 +128,26 @@ export const ProcessEnvSchema = z.object({
    * User's home directory (Windows)
    */
   USERPROFILE: z.string().optional(),
+
+  /**
+   * XDG Base Directory: Config home (Unix/Mac)
+   */
+  XDG_CONFIG_HOME: z.string().optional(),
+
+  /**
+   * XDG Base Directory: Cache home (Unix/Mac)
+   */
+  XDG_CACHE_HOME: z.string().optional(),
+
+  /**
+   * Windows: Roaming application data
+   */
+  APPDATA: z.string().optional(),
+
+  /**
+   * Windows: Local application data
+   */
+  LOCALAPPDATA: z.string().optional(),
 });
 
 export type ProcessEnv = z.infer<typeof ProcessEnvSchema>;

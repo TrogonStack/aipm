@@ -21,9 +21,9 @@ export const FILE_AIPM_CONFIG = 'config.json';
 export const FILE_AIPM_CONFIG_LOCAL = 'config.local.json';
 
 /**
- * Global AIPM directory
+ * Global AIPM directory name (used within XDG directories)
  */
-export const AIPM_GLOBAL_DEFAULT = '.aipm';
+export const AIPM_GLOBAL_DEFAULT = 'aipm';
 
 /**
  * Configuration file names
@@ -43,6 +43,5 @@ export const FILE_CLAUDE_CONFIG = 'config.json';
 /**
  * Environment variables
  */
-export const ENV_AIPM_GLOBAL_DIR = 'AIPM_GLOBAL_DIR';
 export const ENV_HOME = 'HOME';
 export const ENV_USERPROFILE = 'USERPROFILE';

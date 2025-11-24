@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { list } from '../../src/commands/list';
 import { marketplaceAdd } from '../../src/commands/marketplace-add';
 import { writeJsonFile } from '../../src/helpers/fs';
-import { setupTestEnvironment } from '../helpers/test-setup';
+import { setupTestEnvironment } from '../helpers/test-support';
 
 describe('list command', () => {
   let testDir: string;

@@ -168,13 +168,22 @@ aipm sync
 1. **Check disk space**:
 
    ```bash
-   df -h ~/.aipm/cache/
+   # Linux/macOS
+   df -h ~/.cache/aipm/
+
+   # Windows
+   dir "%LOCALAPPDATA%\aipm\cache"
    ```
 
 2. **Clear cache and retry**:
 
    ```bash
-   rm -rf ~/.aipm/cache/my-marketplace
+   # Linux/macOS
+   rm -rf ~/.cache/aipm/my-marketplace
+
+   # Windows
+   rmdir /s /q "%LOCALAPPDATA%\aipm\cache\my-marketplace"
+
    aipm marketplace update my-marketplace
    ```
 
@@ -255,10 +264,15 @@ aipm sync --dry-run
 
 ```bash
 # Check git cache
-ls -la ~/.aipm/cache/
+# Linux/macOS
+ls -la ~/.cache/aipm/
 
 # Check specific marketplace cache
-ls -la ~/.aipm/cache/my-marketplace/
+ls -la ~/.cache/aipm/my-marketplace/
+
+# Windows
+dir "%LOCALAPPDATA%\aipm\cache"
+dir "%LOCALAPPDATA%\aipm\cache\my-marketplace"
 ```
 
 ### Check Synced Files
@@ -278,7 +292,11 @@ find .cursor/marketplace/ -name "*.md"
 cat .cursor/marketplace/my-marketplace/my-plugin/.claude-plugin/plugin.json | jq .
 
 # Check marketplace.json is valid
-cat ~/.aipm/cache/my-marketplace/marketplace.json | jq .
+# Linux/macOS
+cat ~/.cache/aipm/my-marketplace/marketplace.json | jq .
+
+# Windows (PowerShell)
+Get-Content "$env:LOCALAPPDATA\aipm\cache\my-marketplace\marketplace.json" | ConvertFrom-Json
 ```
 
 ---

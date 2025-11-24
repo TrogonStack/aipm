@@ -104,7 +104,7 @@ export async function commandName(options: Options) {
 ```typescript
 // Priority: local > project > global
 const config = mergeConfigs(
-  globalConfig, // ~/.aipm/config.json
+  globalConfig, // ~/.config/aipm/config.json (or %APPDATA%\aipm\config.json on Windows)
   projectConfig, // .aipm/config.json
   localConfig, // .aipm/config.local.json (gitignored)
 );
@@ -172,7 +172,7 @@ User: aipm sync
   ?
 2. For each enabled plugin:
    a. Resolve marketplace path
-      - Git: Clone to ~/.aipm/cache/ (or pull if exists)
+      - Git: Clone to ~/.cache/aipm/ (or pull if exists)
       - Local: Use directory directly
       - URL: Fetch marketplace.json
    b. Find plugin source in marketplace
@@ -189,7 +189,8 @@ User: aipm sync
 
 ```
 User's machine:
-└ ~/.aipm/
+└ ~/.config/aipm/  (config)
+└ ~/.cache/aipm/   (cache)
     ├── config.json                    # Global config
     └── cache/
         └── {marketplace}/             # Git marketplace clones
@@ -212,7 +213,7 @@ Local (.aipm/config.local.json)
   ? overrides
 Project (.aipm/config.json)
   ? overrides
-Global (~/.aipm/config.json)
+Global (~/.config/aipm/config.json)
 ```
 
 See [Configuration System](./config-system.md) for details.
@@ -238,7 +239,7 @@ Scan directory for plugins
 ```
 marketplace: { source: "git", url: "https://github.com/user/plugins.git" }
   ?
-Clone to ~/.aipm/cache/{marketplace-name}/
+Clone to ~/.cache/aipm/{marketplace-name}/
   (or pull if already exists)
   ?
 Read marketplace.json from clone
@@ -253,7 +254,7 @@ marketplace: { source: "url", url: "https://cdn.com/marketplace.json" }
   ?
 Fetch marketplace.json
   ?
-Cache to ~/.aipm/cache/{marketplace-name}/
+Cache to ~/.cache/aipm/{marketplace-name}/
   ?
 Parse plugin list
 ```
@@ -399,7 +400,7 @@ aipm is designed to be extended:
 ### Git Operations
 
 - **Shallow clones**: Uses `--depth 1` for faster clones
-- **Caching**: Git repos cached in `~/.aipm/cache/`
+- **Caching**: Git repos cached in `~/.cache/aipm/` (follows XDG Base Directory spec)
 - **Lazy updates**: Only pulls when `marketplace update` called
 
 ### File Operations

@@ -33,7 +33,8 @@ aipm plugin install document-skills/docx@anthropic  # nested plugin support
 AIPM uses a clean separation between configuration and synced content:
 
 ```
-~/.aipm/cache/              # Shared git marketplace cache
+~/.config/aipm/config.json  # Global config (Linux/macOS)
+~/.cache/aipm/              # Shared git marketplace cache (Linux/macOS)
 
 project/
 ├── .aipm/

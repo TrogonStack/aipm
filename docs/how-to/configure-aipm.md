@@ -194,7 +194,10 @@ Or set `enabled: false` in your config.
 
 To use the same marketplaces in all your projects:
 
-1. Create `~/.aipm/config.json`:
+1. Create global config:
+
+   **Linux/macOS:** `~/.config/aipm/config.json`  
+   **Windows:** `%APPDATA%\aipm\config.json`
 
 ```json
 {

@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { marketplaceAdd } from '../../src/commands/marketplace-add';
 import { marketplaceRemove } from '../../src/commands/marketplace-remove';
 import { loadPluginsConfig } from '../../src/config/loader';
-import { setupTestEnvironment } from '../helpers/test-setup';
+import { setupTestEnvironment } from '../helpers/test-support';
 
 describe('marketplace remove', () => {
   let testDir: string;

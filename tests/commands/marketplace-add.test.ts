@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { marketplaceAdd } from '../../src/commands/marketplace-add';
 import { loadPluginsConfig } from '../../src/config/loader';
 import { fileExists } from '../../src/helpers/fs';
-import { setupTestEnvironment } from '../helpers/test-setup';
+import { setupTestEnvironment } from '../helpers/test-support';
 
 describe('marketplace add', () => {
   let testDir: string;

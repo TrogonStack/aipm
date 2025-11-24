@@ -3,13 +3,12 @@ import { mkdir, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { fileExists } from '../../src/helpers/fs';
 import { clearMarketplaceCache, resolveMarketplacePath } from '../../src/helpers/git';
-import { getGlobalDir } from '../../src/helpers/paths';
+import { getGlobalCacheDir } from '../../src/helpers/paths';
 import type { MarketplaceSource } from '../../src/schema';
 
 describe('git utilities', () => {
   const testCwd = join(import.meta.dir, '../fixtures/git-test');
-  const globalDir = getGlobalDir();
-  const cacheDir = join(globalDir, 'cache');
+  const cacheDir = getGlobalCacheDir();
 
   beforeEach(async () => {
     await rm(testCwd, { recursive: true, force: true });

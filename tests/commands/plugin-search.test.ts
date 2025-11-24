@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import { pluginSearch } from '../../src/commands/plugin-search';
 import * as claudeCodeConfig from '../../src/helpers/claude-code-config';
 import { defaultIO } from '../../src/helpers/io';
+import * as paths from '../../src/helpers/paths';
 
 describe('plugin-search', () => {
   let testDir: string;
@@ -296,10 +297,23 @@ describe('plugin-search', () => {
 
   describe('error handling', () => {
     test('should log info if no marketplaces configured', async () => {
+      // Create empty .aipm/config.json to prevent loading project/local config
+      const aipmDir = join(testDir, '.aipm');
+      await mkdir(aipmDir, { recursive: true });
+      await writeFile(
+        join(aipmDir, 'config.json'),
+        JSON.stringify({
+          marketplaces: {},
+          plugins: {},
+        }),
+      );
+
       const options = {
         cwd: testDir,
       };
 
+      // Mock getGlobalDir to return a non-existent path to prevent loading global config
+      const globalDirSpy = spyOn(paths, 'getGlobalDir').mockReturnValue(join(testDir, '.non-existent-global'));
       // Mock Claude Code as not installed to ensure no auto-discovered marketplaces
       const claudeSpy = spyOn(claudeCodeConfig, 'isClaudeCodeInstalled').mockResolvedValue(false);
       const infoSpy = spyOn(defaultIO, 'logInfo');
@@ -310,6 +324,7 @@ describe('plugin-search', () => {
         'No marketplaces configured. Add a marketplace first with: aipm marketplace add <name> <path>',
       );
 
+      globalDirSpy.mockRestore();
       claudeSpy.mockRestore();
       infoSpy.mockRestore();
     });

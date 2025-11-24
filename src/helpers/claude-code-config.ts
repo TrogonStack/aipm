@@ -1,3 +1,4 @@
+import { homedir } from 'node:os';
 import * as path from 'node:path';
 import { join } from 'node:path';
 import { z } from 'zod';
@@ -8,7 +9,6 @@ import {
   FILE_CLAUDE_KNOWN_MARKETPLACES,
 } from '../constants';
 import { fileExists } from './fs';
-import { getHomeDir } from './paths';
 
 /**
  * Schema for Claude Code's known_marketplaces.json
@@ -85,8 +85,7 @@ export type ClaudeCodeConfig = z.infer<typeof ClaudeCodeConfigSchema>;
  * Get the path to Claude Code's plugin directory
  */
 export function getClaudeCodePluginsDir(): string {
-  const homeDir = getHomeDir();
-  return join(homeDir, DIR_CLAUDE, 'plugins');
+  return join(homedir(), DIR_CLAUDE, 'plugins');
 }
 
 /**
