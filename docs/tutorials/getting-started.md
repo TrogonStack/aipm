@@ -163,11 +163,11 @@ If you have Claude Code installed with official Anthropic marketplaces, **AIPM a
 ```bash
 # No configuration needed - Claude Code marketplaces are auto-discovered!
 aipm list
-# Shows: claude:anthropic-agent-skills (auto-discovered from Claude Code)
+# Shows: claude/anthropic-agent-skills (auto-discovered from Claude Code)
 
 # Install Claude Code plugins to Cursor
-aipm plugin install algorithmic-art@claude:anthropic-agent-skills
-aipm plugin install document-skills/docx@claude:anthropic-agent-skills  # nested plugin!
+aipm plugin install algorithmic-art@claude/anthropic-agent-skills
+aipm plugin install document-skills/docx@claude/anthropic-agent-skills  # nested plugin!
 
 # Sync to .cursor/ directory (for Cursor to use)
 aipm sync
