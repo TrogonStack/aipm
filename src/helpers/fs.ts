@@ -1,7 +1,7 @@
 import { copyFile, mkdir, stat } from 'node:fs/promises';
 import { dirname } from 'node:path';
 import type { z } from 'zod';
-import { isNodeError } from '../errors';
+import { isFileNotFoundError, isNodeError } from '../errors';
 
 export class JsonFileError extends Error {
   constructor(
@@ -72,7 +72,8 @@ export async function backupFile(path: string, dryRun?: boolean): Promise<void> 
   try {
     await copyFile(path, backupPath);
   } catch (error: unknown) {
-    if (isNodeError(error) && error.code !== 'ENOENT') {
+    // Ignore if file doesn't exist - nothing to backup
+    if (!isFileNotFoundError(error)) {
       throw error;
     }
   }

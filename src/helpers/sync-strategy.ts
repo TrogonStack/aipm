@@ -1,17 +1,27 @@
 import { cp, readdir, readFile, writeFile } from 'node:fs/promises';
 import { basename, extname, join } from 'node:path';
-import { DIR_AIPM_NAMESPACE } from '../constants';
+import { DIR_AIPM_NAMESPACE, DIR_SKILLS } from '../constants';
 import { DirectoryNotFoundError, isFileNotFoundError } from '../errors';
+import type { MarketplaceManifest } from '../schema';
 import { applyCursorFrontmatter } from './frontmatter';
 import { ensureDir, fileExists } from './fs';
+import { hasPluginName } from './marketplace';
 
-export type SyncResult = {
+export type AipmPluginSyncResult = {
+  type: 'aipm';
   commandsCount: number;
   rulesCount: number;
   agentsCount: number;
   skillsCount: number;
   hooksCount: number;
 };
+
+export type ClaudeCodePluginSyncResult = {
+  type: 'claudecode';
+  skillsCount: number;
+};
+
+export type SyncResult = AipmPluginSyncResult | ClaudeCodePluginSyncResult;
 
 /**
  * Syncs a plugin to the correct Cursor directories:
@@ -26,8 +36,9 @@ export async function syncPluginToCursor(
   marketplaceName: string,
   pluginName: string,
   cursorDir: string,
-): Promise<SyncResult> {
-  const result: SyncResult = {
+): Promise<AipmPluginSyncResult> {
+  const result: AipmPluginSyncResult = {
+    type: 'aipm',
     commandsCount: 0,
     rulesCount: 0,
     agentsCount: 0,
@@ -194,25 +205,64 @@ async function syncDirectory(sourceDir: string, targetDir: string, extensions: s
 }
 
 /**
+ * Syncs a Claude Code meta-plugin to Cursor directories.
+ * Meta-plugins point to the marketplace root and define skills in the manifest.
+ * We sync each skill directory listed in the manifest's skills array.
+ */
+export async function syncMetaPluginToCursor(
+  marketplacePath: string,
+  marketplaceManifest: MarketplaceManifest,
+  pluginName: string,
+  marketplaceName: string,
+  cursorDir: string,
+): Promise<ClaudeCodePluginSyncResult> {
+  const pluginEntry = marketplaceManifest.plugins.find(hasPluginName(pluginName));
+  if (!pluginEntry || !pluginEntry.skills) {
+    return { type: 'claudecode', skillsCount: 0 };
+  }
+
+  let skillsCount = 0;
+
+  for (const skillPath of pluginEntry.skills) {
+    const normalizedSkillPath = skillPath.replace(/^\.\//, '');
+    const fullSkillPath = join(marketplacePath, normalizedSkillPath);
+
+    const marketplaceSegments = marketplaceName.split('/');
+    const targetPath = join(cursorDir, DIR_SKILLS, DIR_AIPM_NAMESPACE, ...marketplaceSegments, normalizedSkillPath);
+
+    const count = await syncDirectory(fullSkillPath, targetPath, ['.md']);
+    skillsCount += count;
+  }
+
+  return { type: 'claudecode', skillsCount };
+}
+
+/**
  * Gets a summary string for sync results
  */
 export function formatSyncResult(result: SyncResult): string {
   const parts: string[] = [];
 
-  if (result.commandsCount > 0) {
-    parts.push(`${result.commandsCount} command(s)`);
-  }
-  if (result.rulesCount > 0) {
-    parts.push(`${result.rulesCount} rule(s)`);
-  }
-  if (result.agentsCount > 0) {
-    parts.push(`${result.agentsCount} agent(s)`);
-  }
-  if (result.skillsCount > 0) {
-    parts.push(`${result.skillsCount} skill(s)`);
-  }
-  if (result.hooksCount > 0) {
-    parts.push(`${result.hooksCount} hook(s)`);
+  if (result.type === 'aipm') {
+    if (result.commandsCount > 0) {
+      parts.push(`${result.commandsCount} command(s)`);
+    }
+    if (result.rulesCount > 0) {
+      parts.push(`${result.rulesCount} rule(s)`);
+    }
+    if (result.agentsCount > 0) {
+      parts.push(`${result.agentsCount} agent(s)`);
+    }
+    if (result.skillsCount > 0) {
+      parts.push(`${result.skillsCount} skill(s)`);
+    }
+    if (result.hooksCount > 0) {
+      parts.push(`${result.hooksCount} hook(s)`);
+    }
+  } else if (result.type === 'claudecode') {
+    if (result.skillsCount > 0) {
+      parts.push(`${result.skillsCount} skill(s)`);
+    }
   }
 
   return parts.length > 0 ? parts.join(', ') : 'no files';

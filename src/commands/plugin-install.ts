@@ -8,8 +8,8 @@ import { fileExists } from '../helpers/fs';
 import { resolveMarketplacePath } from '../helpers/git';
 import { defaultIO } from '../helpers/io';
 import { getMarketplaceType, loadMarketplaceManifest, resolvePluginPath } from '../helpers/marketplace';
-import { validatePluginStructure } from '../helpers/plugin';
-import { formatSyncResult, syncPluginToCursor } from '../helpers/sync-strategy';
+import { isMetaPlugin, validatePluginStructure } from '../helpers/plugin';
+import { formatSyncResult, syncMetaPluginToCursor, syncPluginToCursor } from '../helpers/sync-strategy';
 
 const PluginInstallOptionsSchema = z.object({
   pluginId: z.string().min(1),
@@ -85,7 +85,8 @@ export async function pluginInstall(options: unknown): Promise<void> {
       }
 
       try {
-        await validatePluginStructure(pluginPath);
+        const isMetaPluginCheck = isMetaPlugin(marketplacePath, pluginPath, manifest);
+        await validatePluginStructure(pluginPath, { isMetaPlugin: isMetaPluginCheck });
       } catch (error: unknown) {
         const message = error instanceof Error ? error.message : String(error);
         const validationError = new Error(`Invalid plugin '${pluginName}': ${message}`);
@@ -122,7 +123,13 @@ export async function pluginInstall(options: unknown): Promise<void> {
     }
 
     const cursorDir = join(cwd, DIR_CURSOR);
-    const syncResult = await syncPluginToCursor(pluginPath, marketplaceName, pluginName, cursorDir);
+    const isMetaPluginCheck = isMetaPlugin(marketplacePath, pluginPath, manifest);
+
+    const syncResult =
+      isMetaPluginCheck && manifest
+        ? await syncMetaPluginToCursor(marketplacePath, manifest, pluginName, marketplaceName, cursorDir)
+        : await syncPluginToCursor(pluginPath, marketplaceName, pluginName, cursorDir);
+
     const summary = formatSyncResult(syncResult);
 
     defaultIO.logSuccess(`Installed ${cmd.pluginId}`);

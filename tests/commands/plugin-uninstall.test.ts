@@ -335,4 +335,307 @@ describe('plugin-uninstall', () => {
       expect(config.plugins['plugin-c@local']).toBeDefined();
     });
   });
+
+  describe('meta-plugin support', () => {
+    test('should delete skill directories for meta-plugins with removeFiles=true', async () => {
+      const testMarketplacePath = join(testDir, 'test-marketplace');
+      await mkdir(testMarketplacePath, { recursive: true });
+
+      const marketplaceManifestPath = join(testMarketplacePath, '.claude-plugin', 'marketplace.json');
+      await mkdir(join(testMarketplacePath, '.claude-plugin'), { recursive: true });
+      await writeFile(
+        marketplaceManifestPath,
+        JSON.stringify({
+          name: 'test-marketplace',
+          owner: { name: 'Test Owner', email: 'test@example.com' },
+          metadata: {
+            description: 'Test marketplace',
+            version: '1.0.0',
+          },
+          plugins: [
+            {
+              name: 'meta-skills',
+              source: './',
+              skills: ['./skill-a', './skill-b'],
+            },
+          ],
+        }),
+      );
+
+      const pluginsPath = join(testDir, '.aipm', 'config.json');
+      const aipmDir = join(testDir, '.aipm');
+      await mkdir(aipmDir, { recursive: true });
+      await writeFile(
+        pluginsPath,
+        JSON.stringify({
+          marketplaces: { 'claude/testmkt': { source: 'directory', path: testMarketplacePath } },
+          plugins: {
+            'meta-skills@claude/testmkt': { enabled: true },
+          },
+        }),
+      );
+
+      const skillAPath = join(testDir, '.cursor', 'skills', 'aipm', 'claude', 'testmkt', 'skill-a');
+      const skillBPath = join(testDir, '.cursor', 'skills', 'aipm', 'claude', 'testmkt', 'skill-b');
+      await mkdir(skillAPath, { recursive: true });
+      await mkdir(skillBPath, { recursive: true });
+      await writeFile(join(skillAPath, 'test.md'), '# Skill A');
+      await writeFile(join(skillBPath, 'test.md'), '# Skill B');
+
+      const options = {
+        pluginId: 'meta-skills@claude/testmkt',
+        cwd: testDir,
+        removeFiles: true,
+      };
+
+      await pluginUninstall(options);
+
+      expect(await fileExists(skillAPath)).toBe(false);
+      expect(await fileExists(skillBPath)).toBe(false);
+
+      const config = JSON.parse(await Bun.file(pluginsPath).text());
+      expect(config.plugins['meta-skills@claude/testmkt']).toBeUndefined();
+    });
+
+    test('should not delete skill directories for meta-plugins with removeFiles=false', async () => {
+      const testMarketplacePath = join(testDir, 'test-marketplace');
+      await mkdir(testMarketplacePath, { recursive: true });
+
+      const marketplaceManifestPath = join(testMarketplacePath, '.claude-plugin', 'marketplace.json');
+      await mkdir(join(testMarketplacePath, '.claude-plugin'), { recursive: true });
+      await writeFile(
+        marketplaceManifestPath,
+        JSON.stringify({
+          name: 'test-marketplace',
+          owner: { name: 'Test Owner', email: 'test@example.com' },
+          metadata: {
+            description: 'Test marketplace',
+            version: '1.0.0',
+          },
+          plugins: [
+            {
+              name: 'meta-skills',
+              source: './',
+              skills: ['./skill-a'],
+            },
+          ],
+        }),
+      );
+
+      const pluginsPath = join(testDir, '.aipm', 'config.json');
+      const aipmDir = join(testDir, '.aipm');
+      await mkdir(aipmDir, { recursive: true });
+      await writeFile(
+        pluginsPath,
+        JSON.stringify({
+          marketplaces: { 'claude/testmkt': { source: 'directory', path: testMarketplacePath } },
+          plugins: {
+            'meta-skills@claude/testmkt': { enabled: true },
+          },
+        }),
+      );
+
+      const skillAPath = join(testDir, '.cursor', 'skills', 'aipm', 'claude', 'testmkt', 'skill-a');
+      await mkdir(skillAPath, { recursive: true });
+      await writeFile(join(skillAPath, 'test.md'), '# Skill A');
+
+      const options = {
+        pluginId: 'meta-skills@claude/testmkt',
+        cwd: testDir,
+        removeFiles: false,
+      };
+
+      await pluginUninstall(options);
+
+      expect(await fileExists(skillAPath)).toBe(true);
+
+      const config = JSON.parse(await Bun.file(pluginsPath).text());
+      expect(config.plugins['meta-skills@claude/testmkt']).toBeUndefined();
+    });
+  });
+
+  describe('regular plugin file deletion', () => {
+    test('should delete all plugin directories for regular plugins with removeFiles=true', async () => {
+      const testMarketplacePath = join(testDir, 'test-marketplace');
+      const regularPluginPath = join(testMarketplacePath, 'regular-plugin');
+      await mkdir(regularPluginPath, { recursive: true });
+
+      const marketplaceManifestPath = join(testMarketplacePath, 'marketplace.json');
+      await writeFile(
+        marketplaceManifestPath,
+        JSON.stringify({
+          name: 'test-marketplace',
+          plugins: [
+            {
+              name: 'regular-plugin',
+              source: './regular-plugin',
+            },
+          ],
+        }),
+      );
+
+      const pluginManifestDir = join(regularPluginPath, '.claude-plugin');
+      await mkdir(pluginManifestDir, { recursive: true });
+      await writeFile(join(pluginManifestDir, 'plugin.json'), JSON.stringify({ name: 'regular-plugin' }));
+
+      await mkdir(join(regularPluginPath, 'commands'), { recursive: true });
+      await writeFile(join(regularPluginPath, 'commands', 'test.md'), '# Command');
+
+      const pluginsPath = join(testDir, '.aipm', 'config.json');
+      const aipmDir = join(testDir, '.aipm');
+      await mkdir(aipmDir, { recursive: true });
+      await writeFile(
+        pluginsPath,
+        JSON.stringify({
+          marketplaces: { testmkt: { source: 'directory', path: testMarketplacePath } },
+          plugins: {
+            'regular-plugin@testmkt': { enabled: true },
+          },
+        }),
+      );
+
+      const commandsPath = join(testDir, '.cursor', 'commands', 'aipm', 'testmkt', 'regular-plugin');
+      const rulesPath = join(testDir, '.cursor', 'rules', 'aipm', 'testmkt', 'regular-plugin');
+      const agentsPath = join(testDir, '.cursor', 'agents', 'aipm', 'testmkt', 'regular-plugin');
+      const skillsPath = join(testDir, '.cursor', 'skills', 'aipm', 'testmkt', 'regular-plugin');
+      const hooksPath = join(testDir, '.cursor', 'hooks', 'aipm', 'testmkt', 'regular-plugin');
+
+      await mkdir(commandsPath, { recursive: true });
+      await mkdir(rulesPath, { recursive: true });
+      await mkdir(agentsPath, { recursive: true });
+      await mkdir(skillsPath, { recursive: true });
+      await mkdir(hooksPath, { recursive: true });
+
+      await writeFile(join(commandsPath, 'test.md'), '# Command');
+      await writeFile(join(rulesPath, 'test.mdc'), '# Rule');
+      await writeFile(join(agentsPath, 'test.md'), '# Agent');
+      await writeFile(join(skillsPath, 'test.md'), '# Skill');
+      await writeFile(join(hooksPath, 'test.sh'), '#!/bin/bash');
+
+      const options = {
+        pluginId: 'regular-plugin@testmkt',
+        cwd: testDir,
+        removeFiles: true,
+      };
+
+      await pluginUninstall(options);
+
+      expect(await fileExists(commandsPath)).toBe(false);
+      expect(await fileExists(rulesPath)).toBe(false);
+      expect(await fileExists(agentsPath)).toBe(false);
+      expect(await fileExists(skillsPath)).toBe(false);
+      expect(await fileExists(hooksPath)).toBe(false);
+
+      const config = JSON.parse(await Bun.file(pluginsPath).text());
+      expect(config.plugins['regular-plugin@testmkt']).toBeUndefined();
+    });
+
+    test('should not delete plugin directories for regular plugins with removeFiles=false', async () => {
+      const testMarketplacePath = join(testDir, 'test-marketplace');
+      const regularPluginPath = join(testMarketplacePath, 'regular-plugin');
+      await mkdir(regularPluginPath, { recursive: true });
+
+      const marketplaceManifestPath = join(testMarketplacePath, 'marketplace.json');
+      await writeFile(
+        marketplaceManifestPath,
+        JSON.stringify({
+          name: 'test-marketplace',
+          plugins: [
+            {
+              name: 'regular-plugin',
+              source: './regular-plugin',
+            },
+          ],
+        }),
+      );
+
+      const pluginManifestDir = join(regularPluginPath, '.claude-plugin');
+      await mkdir(pluginManifestDir, { recursive: true });
+      await writeFile(join(pluginManifestDir, 'plugin.json'), JSON.stringify({ name: 'regular-plugin' }));
+
+      const pluginsPath = join(testDir, '.aipm', 'config.json');
+      const aipmDir = join(testDir, '.aipm');
+      await mkdir(aipmDir, { recursive: true });
+      await writeFile(
+        pluginsPath,
+        JSON.stringify({
+          marketplaces: { testmkt: { source: 'directory', path: testMarketplacePath } },
+          plugins: {
+            'regular-plugin@testmkt': { enabled: true },
+          },
+        }),
+      );
+
+      const commandsPath = join(testDir, '.cursor', 'commands', 'aipm', 'testmkt', 'regular-plugin');
+      await mkdir(commandsPath, { recursive: true });
+      await writeFile(join(commandsPath, 'test.md'), '# Command');
+
+      const options = {
+        pluginId: 'regular-plugin@testmkt',
+        cwd: testDir,
+        removeFiles: false,
+      };
+
+      await pluginUninstall(options);
+
+      expect(await fileExists(commandsPath)).toBe(true);
+
+      const config = JSON.parse(await Bun.file(pluginsPath).text());
+      expect(config.plugins['regular-plugin@testmkt']).toBeUndefined();
+    });
+
+    test('should still delete AIPM plugin files when marketplace config missing', async () => {
+      const testMarketplacePath = join(testDir, 'test-marketplace');
+      const regularPluginPath = join(testMarketplacePath, 'regular-plugin');
+      await mkdir(regularPluginPath, { recursive: true });
+
+      const marketplaceManifestPath = join(testMarketplacePath, 'marketplace.json');
+      await writeFile(
+        marketplaceManifestPath,
+        JSON.stringify({
+          name: 'test-marketplace',
+          plugins: [
+            {
+              name: 'regular-plugin',
+              source: './regular-plugin',
+            },
+          ],
+        }),
+      );
+
+      const pluginManifestDir = join(regularPluginPath, '.claude-plugin');
+      await mkdir(pluginManifestDir, { recursive: true });
+      await writeFile(join(pluginManifestDir, 'plugin.json'), JSON.stringify({ name: 'regular-plugin' }));
+
+      const pluginsPath = join(testDir, '.aipm', 'config.json');
+      const aipmDir = join(testDir, '.aipm');
+      await mkdir(aipmDir, { recursive: true });
+      await writeFile(
+        pluginsPath,
+        JSON.stringify({
+          marketplaces: {},
+          plugins: {
+            'regular-plugin@testmkt': { enabled: true },
+          },
+        }),
+      );
+
+      const commandsPath = join(testDir, '.cursor', 'commands', 'aipm', 'testmkt', 'regular-plugin');
+      await mkdir(commandsPath, { recursive: true });
+      await writeFile(join(commandsPath, 'test.md'), '# Command');
+
+      const options = {
+        pluginId: 'regular-plugin@testmkt',
+        cwd: testDir,
+        removeFiles: true,
+      };
+
+      await pluginUninstall(options);
+
+      expect(await fileExists(commandsPath)).toBe(false);
+
+      const config = JSON.parse(await Bun.file(pluginsPath).text());
+      expect(config.plugins['regular-plugin@testmkt']).toBeUndefined();
+    });
+  });
 });
