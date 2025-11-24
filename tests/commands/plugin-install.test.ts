@@ -431,4 +431,174 @@ describe('plugin-install', () => {
       expect(config.plugins['plugin-2@local']).toBeDefined();
     });
   });
+
+  describe('nested plugin directories', () => {
+    test('should install plugin from nested directory when using simple name', async () => {
+      const marketplaceDir = join(testDir, 'marketplace');
+      await mkdir(marketplaceDir, { recursive: true });
+
+      // Create plugin in nested directory: available-plugins/code-review-ai
+      const nestedPluginDir = join(marketplaceDir, 'available-plugins', 'code-review-ai');
+      await mkdir(join(nestedPluginDir, '.claude-plugin'), { recursive: true });
+      await writeFile(
+        join(nestedPluginDir, '.claude-plugin', 'plugin.json'),
+        JSON.stringify({
+          name: 'code-review-ai',
+          version: '1.2.0',
+          author: 'Test Author',
+        }),
+      );
+
+      // Create a command file
+      await mkdir(join(nestedPluginDir, 'commands'), { recursive: true });
+      await writeFile(join(nestedPluginDir, 'commands', 'review.md'), '# Review command');
+
+      const pluginsPath = join(testDir, '.aipm', 'config.json');
+      const aipmDir = join(testDir, '.aipm');
+      await mkdir(aipmDir, { recursive: true });
+      await writeFile(
+        pluginsPath,
+        JSON.stringify({
+          marketplaces: {
+            local: { source: 'directory', path: './marketplace' },
+          },
+          plugins: {},
+        }),
+      );
+
+      const options = {
+        pluginId: 'code-review-ai@local',
+        cwd: testDir,
+      };
+
+      await pluginInstall(options);
+
+      // Verify plugin was installed
+      const config = JSON.parse(await Bun.file(pluginsPath).text());
+      expect(config.plugins['code-review-ai@local']).toBeDefined();
+      expect(config.plugins['code-review-ai@local'].enabled).toBe(true);
+
+      // Verify files were synced to .cursor/
+      const commandsPath = join(testDir, '.cursor', 'commands', 'aipm', 'local', 'code-review-ai', 'review.md');
+      expect(await fileExists(commandsPath)).toBe(true);
+    });
+
+    test('should install plugin from nested directory when manifest has incorrect source path', async () => {
+      const marketplaceDir = join(testDir, 'marketplace');
+      await mkdir(marketplaceDir, { recursive: true });
+
+      // Create marketplace manifest with incorrect source path
+      await mkdir(join(marketplaceDir, '.claude-plugin'), { recursive: true });
+      await writeFile(
+        join(marketplaceDir, '.claude-plugin', 'marketplace.json'),
+        JSON.stringify({
+          name: 'test-marketplace',
+          owner: { name: 'Test Owner' },
+          plugins: [
+            {
+              name: 'code-review-ai',
+              source: './wrong-path/code-review-ai', // Incorrect path
+            },
+          ],
+        }),
+      );
+
+      // Create plugin in actual nested directory: available-plugins/code-review-ai
+      const nestedPluginDir = join(marketplaceDir, 'available-plugins', 'code-review-ai');
+      await mkdir(join(nestedPluginDir, '.claude-plugin'), { recursive: true });
+      await writeFile(
+        join(nestedPluginDir, '.claude-plugin', 'plugin.json'),
+        JSON.stringify({
+          name: 'code-review-ai',
+          version: '1.2.0',
+          author: 'Test Author',
+        }),
+      );
+
+      await mkdir(join(nestedPluginDir, 'commands'), { recursive: true });
+      await writeFile(join(nestedPluginDir, 'commands', 'review.md'), '# Review command');
+
+      const pluginsPath = join(testDir, '.aipm', 'config.json');
+      const aipmDir = join(testDir, '.aipm');
+      await mkdir(aipmDir, { recursive: true });
+      await writeFile(
+        pluginsPath,
+        JSON.stringify({
+          marketplaces: {
+            local: { source: 'directory', path: './marketplace' },
+          },
+          plugins: {},
+        }),
+      );
+
+      const options = {
+        pluginId: 'code-review-ai@local',
+        cwd: testDir,
+      };
+
+      await pluginInstall(options);
+
+      // Verify plugin was installed despite incorrect manifest path
+      const config = JSON.parse(await Bun.file(pluginsPath).text());
+      expect(config.plugins['code-review-ai@local']).toBeDefined();
+      expect(config.plugins['code-review-ai@local'].enabled).toBe(true);
+
+      // Verify files were synced from the correct nested path
+      const commandsPath = join(testDir, '.cursor', 'commands', 'aipm', 'local', 'code-review-ai', 'review.md');
+      expect(await fileExists(commandsPath)).toBe(true);
+    });
+
+    test('should handle multiple nested plugins with same base name', async () => {
+      const marketplaceDir = join(testDir, 'marketplace');
+      await mkdir(marketplaceDir, { recursive: true });
+
+      // Create two plugins with same base name in different nested directories
+      const plugin1Dir = join(marketplaceDir, 'category-a', 'my-plugin');
+      await mkdir(join(plugin1Dir, '.claude-plugin'), { recursive: true });
+      await writeFile(
+        join(plugin1Dir, '.claude-plugin', 'plugin.json'),
+        JSON.stringify({
+          name: 'my-plugin',
+          version: '1.0.0',
+          author: 'Test Author',
+        }),
+      );
+
+      const plugin2Dir = join(marketplaceDir, 'category-b', 'my-plugin');
+      await mkdir(join(plugin2Dir, '.claude-plugin'), { recursive: true });
+      await writeFile(
+        join(plugin2Dir, '.claude-plugin', 'plugin.json'),
+        JSON.stringify({
+          name: 'my-plugin',
+          version: '2.0.0',
+          author: 'Test Author',
+        }),
+      );
+
+      const pluginsPath = join(testDir, '.aipm', 'config.json');
+      const aipmDir = join(testDir, '.aipm');
+      await mkdir(aipmDir, { recursive: true });
+      await writeFile(
+        pluginsPath,
+        JSON.stringify({
+          marketplaces: {
+            local: { source: 'directory', path: './marketplace' },
+          },
+          plugins: {},
+        }),
+      );
+
+      const options = {
+        pluginId: 'my-plugin@local',
+        cwd: testDir,
+      };
+
+      // Should install the first matching plugin found
+      await pluginInstall(options);
+
+      const config = JSON.parse(await Bun.file(pluginsPath).text());
+      expect(config.plugins['my-plugin@local']).toBeDefined();
+      expect(config.plugins['my-plugin@local'].enabled).toBe(true);
+    });
+  });
 });

@@ -7,12 +7,7 @@ import { loadTargetConfig, saveConfig } from '../helpers/aipm-config';
 import { fileExists } from '../helpers/fs';
 import { resolveMarketplacePath } from '../helpers/git';
 import { defaultIO } from '../helpers/io';
-import {
-  getMarketplaceType,
-  getPluginSourcePath,
-  isPluginInManifest,
-  loadMarketplaceManifest,
-} from '../helpers/marketplace';
+import { getMarketplaceType, loadMarketplaceManifest, resolvePluginPath } from '../helpers/marketplace';
 import { validatePluginStructure } from '../helpers/plugin';
 import { formatSyncResult, syncPluginToCursor } from '../helpers/sync-strategy';
 
@@ -65,25 +60,30 @@ export async function pluginInstall(options: unknown): Promise<void> {
       throw error;
     }
 
-    const manifest = !cmd.dryRun
-      ? await loadMarketplaceManifest(marketplacePath, getMarketplaceType(marketplaceName))
-      : null;
+    // In dry-run mode, skip validation for git/url marketplaces that haven't been cached yet.
+    // Directory marketplaces can still be validated since they exist locally.
+    const isDirectoryMarketplace = marketplace.source === 'directory';
+    const shouldSkipValidation = cmd.dryRun && !isDirectoryMarketplace;
 
-    if (!isPluginInManifest(pluginName, manifest)) {
-      const error = new Error(`Plugin '${pluginName}' not found in marketplace '${marketplaceName}'`);
-      defaultIO.logError(error.message);
-      throw error;
-    }
+    let manifest: Awaited<ReturnType<typeof loadMarketplaceManifest>> = null;
+    let pluginPath: string | null = null;
 
-    const pluginPath = getPluginSourcePath(marketplacePath, pluginName, manifest);
+    if (!shouldSkipValidation) {
+      manifest = await loadMarketplaceManifest(marketplacePath, getMarketplaceType(marketplaceName));
 
-    if (!cmd.dryRun && !(await fileExists(pluginPath))) {
-      const error = new Error(`Plugin '${pluginName}' not found in marketplace '${marketplaceName}'`);
-      defaultIO.logError(error.message);
-      throw error;
-    }
+      // Resolve plugin path: try manifest first, then search recursively if needed
+      pluginPath = await resolvePluginPath(marketplacePath, pluginName, manifest);
 
-    if (!cmd.dryRun) {
+      if (!(await fileExists(pluginPath))) {
+        const error = new Error(
+          `Plugin '${pluginName}' not found in marketplace '${marketplaceName}'. ` +
+            `Checked path: ${pluginPath}. ` +
+            `If the plugin is in a nested directory, use the full path shown in search results.`,
+        );
+        defaultIO.logError(error.message);
+        throw error;
+      }
+
       try {
         await validatePluginStructure(pluginPath);
       } catch (error: unknown) {
@@ -114,6 +114,12 @@ export async function pluginInstall(options: unknown): Promise<void> {
 
     await saveConfig(cwd, updatedConfig, cmd.local);
     defaultIO.logSuccess(`Enabled plugin '${cmd.pluginId}' in ${configName}`);
+
+    // pluginPath is guaranteed to be set here since we skip validation only in dry-run mode,
+    // and dry-run mode returns early above
+    if (!pluginPath) {
+      throw new Error(`Plugin path not resolved for '${pluginName}'`);
+    }
 
     const cursorDir = join(cwd, DIR_CURSOR);
     const syncResult = await syncPluginToCursor(pluginPath, marketplaceName, pluginName, cursorDir);
