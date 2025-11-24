@@ -386,5 +386,3 @@ If you're still stuck:
 ## Related
 
 - [Reference: CLI Commands](../reference/cli-commands.md)
-- [Reference: Exit Codes](../reference/exit-codes.md)
-- [Explanation: Git Cache Strategy](../explanation/git-cache.md)

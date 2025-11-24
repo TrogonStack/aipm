@@ -100,7 +100,7 @@ Enable your plugin and sync it:
 # Enable the hello-world plugin
 aipm plugin enable hello-world@my-marketplace
 
-# Sync plugins to .cursor/marketplace/
+# Sync plugins to .cursor/{type}/aipm/
 aipm sync
 
 # List all plugins
@@ -115,14 +115,14 @@ aipm info hello-world@my-marketplace
 Check that the plugin files were synced correctly:
 
 ```bash
-# List synced plugin files
-ls -la .cursor/marketplace/my-marketplace/hello-world/
+# List synced plugin files (commands are in commands/, rules in rules/, etc.)
+ls -la .cursor/commands/aipm/my-marketplace/hello-world/
 
 # View the command file
-cat .cursor/marketplace/my-marketplace/hello-world/commands/greet.md
+cat .cursor/commands/aipm/my-marketplace/hello-world/greet.md
 ```
 
-You should see your plugin's command file in the marketplace directory!
+You should see your plugin's command file in the commands directory!
 
 ## Part 6: Managing Plugins
 

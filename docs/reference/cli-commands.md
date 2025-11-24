@@ -592,18 +592,9 @@ All commands use these exit codes:
 | `0`  | Success                               |
 | `1`  | Error (see error message for details) |
 
-For detailed error information, see [Exit Codes Reference](./exit-codes.md).
-
----
-
-## Environment Variables
-
-See [Environment Variables Reference](./environment.md).
-
 ---
 
 ## Related
 
 - [How-To: Debug Plugins](../how-to/debug-plugins.md)
 - [Tutorial: Getting Started](../tutorials/getting-started.md)
-- [Configuration Schema](./config-schema.md)
