@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.4.3](https://github.com/TrogonStack/aipm/compare/v0.4.2...v0.4.3) (2025-11-24)
+
+
+### Bug Fixes
+
+* follow XDG spec ([#34](https://github.com/TrogonStack/aipm/issues/34)) ([f0e544d](https://github.com/TrogonStack/aipm/commit/f0e544d0281a921551d772cce303c0e0301de067))
+* move config under .aipm directory ([#32](https://github.com/TrogonStack/aipm/issues/32)) ([9d6338a](https://github.com/TrogonStack/aipm/commit/9d6338ad315d043704c74da017961693be1c2bf6))
+* prevent Claude marketplaces from leaking into project config ([#35](https://github.com/TrogonStack/aipm/issues/35)) ([cd77a3e](https://github.com/TrogonStack/aipm/commit/cd77a3e35ce223b18c7d195a8c5ec59e4368c751))
+
 ## [0.4.2](https://github.com/TrogonStack/aipm/compare/v0.4.1...v0.4.2) (2025-11-11)
 
 
