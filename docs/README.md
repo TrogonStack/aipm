@@ -37,7 +37,7 @@ _Technical specifications and API details_
 
 **New to aipm?** Start here:
 
-1. **Install**: Follow the [Installation Guide](../INSTALLATION.md)
+1. **Install**: Follow the [Installation Guide](./how-to/installation.md)
 2. **Learn**: Complete the [Getting Started Tutorial](./tutorials/getting-started.md)
 3. **Use**: Browse [How-To Guides](./how-to/) for your specific task
 
@@ -67,7 +67,7 @@ Consult [Reference](./reference/)
 
 ### For Users
 
-- [Installation Guide](../INSTALLATION.md) - Platform-specific installation
+- [Installation Guide](./how-to/installation.md) - Platform-specific installation
 - [README](../README.md) - Project overview and quick start
 - [Changelog](../CHANGELOG.md) - Version history
 
