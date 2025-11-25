@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.5](https://github.com/TrogonStack/aipm/compare/v0.4.4...v0.4.5) (2025-11-25)
+
+
+### Bug Fixes
+
+* installing claude code plugins ([#39](https://github.com/TrogonStack/aipm/issues/39)) ([06f36ff](https://github.com/TrogonStack/aipm/commit/06f36ff7bd974bdb9907c5974e110dd1d180cd70))
+
 ## [0.4.4](https://github.com/TrogonStack/aipm/compare/v0.4.3...v0.4.4) (2025-11-24)
 
 
