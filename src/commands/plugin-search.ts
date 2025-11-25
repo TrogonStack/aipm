@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { loadPluginsConfig } from '../config/loader';
+import { getErrorMessage } from '../errors';
 import { resolveMarketplacePath } from '../helpers/git';
 import { defaultIO } from '../helpers/io';
 import { getAvailablePlugins, getMarketplaceType, loadMarketplaceManifest } from '../helpers/marketplace';
@@ -127,7 +128,7 @@ export async function pluginSearch(options: unknown): Promise<void> {
 
     console.log('💡 Install a plugin with: aipm plugin install <name>@<marketplace>\n');
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : String(error);
+    const message = getErrorMessage(error);
     defaultIO.logError(`Failed to search plugins: ${message}`);
     throw error;
   }

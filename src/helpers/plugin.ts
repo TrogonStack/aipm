@@ -5,6 +5,29 @@ import type { MarketplaceManifest, PluginManifest } from '../schema';
 import { PluginManifestSchema } from '../schema';
 import { readJsonFile } from './fs';
 
+export type ParsedPluginId = {
+  pluginName: string;
+  marketplaceName: string;
+};
+
+export function parsePluginId(pluginId: string): ParsedPluginId {
+  const parts = pluginId.split('@');
+
+  if (parts.length !== 2 || !parts[0] || !parts[1]) {
+    throw new Error(`Invalid plugin ID format: ${pluginId} (expected: plugin@marketplace)`);
+  }
+
+  return { pluginName: parts[0], marketplaceName: parts[1] };
+}
+
+export function tryParsePluginId(pluginId: string): ParsedPluginId | null {
+  try {
+    return parsePluginId(pluginId);
+  } catch {
+    return null;
+  }
+}
+
 export async function loadPluginManifest(pluginPath: string): Promise<PluginManifest> {
   const manifestPath = join(pluginPath, DIR_CLAUDE_PLUGIN, FILE_PLUGIN_MANIFEST);
 

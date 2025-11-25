@@ -3,11 +3,11 @@ import { join } from 'node:path';
 import { z } from 'zod';
 import { getConfigPath, loadPluginsConfig } from '../config/loader';
 import { FILE_AIPM_CONFIG, FILE_AIPM_CONFIG_LOCAL } from '../constants';
-import { DirectoryNotFoundError, isFileNotFoundError, PluginNotFoundError } from '../errors';
+import { DirectoryNotFoundError, getErrorMessage, isFileNotFoundError, PluginNotFoundError } from '../errors';
 import { resolveMarketplacePath } from '../helpers/git';
 import { defaultIO } from '../helpers/io';
 import { getMarketplaceType, getPluginSourcePath, loadMarketplaceManifest } from '../helpers/marketplace';
-import { loadPluginManifest } from '../helpers/plugin';
+import { loadPluginManifest, tryParsePluginId } from '../helpers/plugin';
 
 const InfoOptionsSchema = z.object({
   pluginId: z.string().min(1),
@@ -28,18 +28,13 @@ export async function info(options: unknown): Promise<void> {
       return;
     }
 
-    const parts = cmd.pluginId.split('@');
-    if (parts.length !== 2) {
+    const parsed = tryParsePluginId(cmd.pluginId);
+    if (!parsed) {
       defaultIO.logError(`Invalid plugin ID format: ${cmd.pluginId} (expected: plugin@marketplace)`);
       return;
     }
 
-    const [pluginName, marketplaceName] = parts;
-
-    if (!pluginName || !marketplaceName) {
-      defaultIO.logError(`Invalid plugin ID format: ${cmd.pluginId} (expected: plugin@marketplace)`);
-      return;
-    }
+    const { pluginName, marketplaceName } = parsed;
 
     const marketplace = config.marketplaces[marketplaceName];
     if (!marketplace) {
@@ -76,7 +71,7 @@ export async function info(options: unknown): Promise<void> {
     try {
       manifest = await loadPluginManifest(pluginPath);
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : String(error);
+      const message = getErrorMessage(error);
       defaultIO.logError(`Failed to get plugin info: ${message}`);
       return;
     }
@@ -142,7 +137,7 @@ export async function info(options: unknown): Promise<void> {
       defaultIO.logError(error.message);
       return;
     }
-    const message = error instanceof Error ? error.message : String(error);
+    const message = getErrorMessage(error);
     defaultIO.logError(`Failed to get plugin info: ${message}`);
     throw error;
   }

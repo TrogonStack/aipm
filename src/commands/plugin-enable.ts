@@ -2,6 +2,7 @@ import merge from 'lodash.merge';
 import { z } from 'zod';
 import { getConfigPath, getNotInitializedMessage, loadPluginsConfig } from '../config/loader';
 import { FILE_AIPM_CONFIG, FILE_AIPM_CONFIG_LOCAL } from '../constants';
+import { getErrorMessage } from '../errors';
 import { loadTargetConfig, saveConfig } from '../helpers/aipm-config';
 import { defaultIO } from '../helpers/io';
 
@@ -50,7 +51,7 @@ export async function pluginEnable(options: unknown): Promise<void> {
     await saveConfig(cwd, updatedConfig, cmd.local);
     defaultIO.logSuccess(`Enabled plugin '${cmd.pluginId}' in ${configName}`);
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : String(error);
+    const message = getErrorMessage(error);
     defaultIO.logError(`Failed to enable plugin: ${message}`);
     throw error;
   }

@@ -10,7 +10,7 @@ import {
   FILE_AIPM_CONFIG_LOCAL,
   PLUGIN_SUBDIRS,
 } from '../constants';
-import { isFileNotFoundError } from '../errors';
+import { getErrorMessage, isFileNotFoundError } from '../errors';
 import { loadTargetConfig, saveConfig } from '../helpers/aipm-config';
 import { resolveMarketplacePath } from '../helpers/git';
 import { defaultIO } from '../helpers/io';
@@ -20,7 +20,7 @@ import {
   hasPluginName,
   loadMarketplaceManifest,
 } from '../helpers/marketplace';
-import { isMetaPlugin } from '../helpers/plugin';
+import { isMetaPlugin, tryParsePluginId } from '../helpers/plugin';
 
 const PluginUninstallOptionsSchema = z.object({
   pluginId: z.string().min(1),
@@ -76,53 +76,44 @@ export async function pluginUninstall(options: unknown): Promise<void> {
       defaultIO.logSuccess(`Removed plugin '${cmd.pluginId}' from ${configName}`);
 
       if (cmd.removeFiles) {
-        const [pluginName, marketplaceName] = cmd.pluginId.split('@');
+        const parsed = tryParsePluginId(cmd.pluginId);
+        if (!parsed) {
+          defaultIO.logError(
+            `Cannot delete files: Invalid plugin ID format: ${cmd.pluginId} (expected: plugin@marketplace)`,
+          );
+          return;
+        }
 
-        if (pluginName && marketplaceName) {
-          let deletedCount = 0;
+        const { pluginName, marketplaceName } = parsed;
+        let deletedCount = 0;
 
-          const marketplaceConfig = config.marketplaces[marketplaceName];
-          const isClaudeCodeMarketplace = getMarketplaceType(marketplaceName) === 'claude';
+        const marketplaceConfig = config.marketplaces[marketplaceName];
+        const isClaudeCodeMarketplace = getMarketplaceType(marketplaceName) === 'claude';
 
-          if (marketplaceConfig) {
-            const marketplacePath = await resolveMarketplacePath(marketplaceName, marketplaceConfig, cwd);
-            if (!marketplacePath) {
-              throw new Error(`Could not resolve marketplace path for '${marketplaceName}'`);
-            }
-            const manifest = await loadMarketplaceManifest(marketplacePath, getMarketplaceType(marketplaceName));
-            const pluginPath = getPluginSourcePath(marketplacePath, pluginName, manifest);
+        if (marketplaceConfig) {
+          const marketplacePath = await resolveMarketplacePath(marketplaceName, marketplaceConfig, cwd);
+          if (!marketplacePath) {
+            throw new Error(`Could not resolve marketplace path for '${marketplaceName}'`);
+          }
+          const manifest = await loadMarketplaceManifest(marketplacePath, getMarketplaceType(marketplaceName));
+          const pluginPath = getPluginSourcePath(marketplacePath, pluginName, manifest);
 
-            const isMetaPluginCheck = isMetaPlugin(marketplacePath, pluginPath, manifest);
+          const isMetaPluginCheck = isMetaPlugin(marketplacePath, pluginPath, manifest);
 
-            if (isMetaPluginCheck && manifest) {
-              const pluginEntry = manifest.plugins.find(hasPluginName(pluginName));
-              if (pluginEntry?.skills) {
-                for (const skillPath of pluginEntry.skills) {
-                  const normalizedSkillPath = skillPath.replace(/^\.\//, '');
-                  const marketplaceSegments = marketplaceName.split('/');
-                  const installedPath = join(
-                    cwd,
-                    DIR_CURSOR,
-                    DIR_SKILLS,
-                    DIR_AIPM_NAMESPACE,
-                    ...marketplaceSegments,
-                    normalizedSkillPath,
-                  );
-
-                  try {
-                    await rm(installedPath, { recursive: true });
-                    deletedCount++;
-                  } catch (error) {
-                    // Ignore if path doesn't exist - that's fine
-                    if (!isFileNotFoundError(error)) {
-                      throw error;
-                    }
-                  }
-                }
-              }
-            } else {
-              for (const subdir of PLUGIN_SUBDIRS) {
-                const installedPath = join(cwd, DIR_CURSOR, subdir, DIR_AIPM_NAMESPACE, marketplaceName, pluginName);
+          if (isMetaPluginCheck && manifest) {
+            const pluginEntry = manifest.plugins.find(hasPluginName(pluginName));
+            if (pluginEntry?.skills) {
+              for (const skillPath of pluginEntry.skills) {
+                const normalizedSkillPath = skillPath.replace(/^\.\//, '');
+                const marketplaceSegments = marketplaceName.split('/');
+                const installedPath = join(
+                  cwd,
+                  DIR_CURSOR,
+                  DIR_SKILLS,
+                  DIR_AIPM_NAMESPACE,
+                  ...marketplaceSegments,
+                  normalizedSkillPath,
+                );
 
                 try {
                   await rm(installedPath, { recursive: true });
@@ -136,39 +127,53 @@ export async function pluginUninstall(options: unknown): Promise<void> {
               }
             }
           } else {
-            // Marketplace config missing - can still delete AIPM plugins, but not Claude Code meta-plugins
-            if (isClaudeCodeMarketplace) {
-              defaultIO.logInfo(
-                `⚠️  Cannot delete files for Claude Code plugin '${cmd.pluginId}': ` +
-                  `marketplace '${marketplaceName}' not found in config. ` +
-                  `Manual cleanup may be required in .cursor/skills/aipm/${marketplaceName}/`,
-              );
-            } else {
-              // AIPM plugins have predictable paths - delete them directly
-              for (const subdir of PLUGIN_SUBDIRS) {
-                const installedPath = join(cwd, DIR_CURSOR, subdir, DIR_AIPM_NAMESPACE, marketplaceName, pluginName);
+            for (const subdir of PLUGIN_SUBDIRS) {
+              const installedPath = join(cwd, DIR_CURSOR, subdir, DIR_AIPM_NAMESPACE, marketplaceName, pluginName);
 
-                try {
-                  await rm(installedPath, { recursive: true });
-                  deletedCount++;
-                } catch (error) {
-                  // Ignore if path doesn't exist - that's fine
-                  if (!isFileNotFoundError(error)) {
-                    throw error;
-                  }
+              try {
+                await rm(installedPath, { recursive: true });
+                deletedCount++;
+              } catch (error) {
+                // Ignore if path doesn't exist - that's fine
+                if (!isFileNotFoundError(error)) {
+                  throw error;
                 }
               }
             }
           }
+        } else {
+          // Marketplace config missing - can still delete AIPM plugins, but not Claude Code meta-plugins
+          if (isClaudeCodeMarketplace) {
+            defaultIO.logInfo(
+              `⚠️  Cannot delete files for Claude Code plugin '${cmd.pluginId}': ` +
+                `marketplace '${marketplaceName}' not found in config. ` +
+                `Manual cleanup may be required in .cursor/skills/aipm/${marketplaceName}/`,
+            );
+          } else {
+            // AIPM plugins have predictable paths - delete them directly
+            for (const subdir of PLUGIN_SUBDIRS) {
+              const installedPath = join(cwd, DIR_CURSOR, subdir, DIR_AIPM_NAMESPACE, marketplaceName, pluginName);
 
-          if (deletedCount > 0) {
-            defaultIO.logSuccess(`Deleted plugin files from ${deletedCount} location(s) in .cursor/`);
+              try {
+                await rm(installedPath, { recursive: true });
+                deletedCount++;
+              } catch (error) {
+                // Ignore if path doesn't exist - that's fine
+                if (!isFileNotFoundError(error)) {
+                  throw error;
+                }
+              }
+            }
           }
+        }
+
+        if (deletedCount > 0) {
+          defaultIO.logSuccess(`Deleted plugin files from ${deletedCount} location(s) in .cursor/`);
         }
       }
     }
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : String(error);
+    const message = getErrorMessage(error);
     defaultIO.logError(`Failed to uninstall plugin: ${message}`);
     throw error;
   }

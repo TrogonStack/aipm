@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { getConfigPath, loadPluginsConfig } from '../config/loader';
 import { FILE_AIPM_CONFIG, FILE_AIPM_CONFIG_LOCAL } from '../constants';
+import { getErrorMessage } from '../errors';
 import { defaultIO } from '../helpers/io';
 
 const ListOptionsSchema = z.object({
@@ -65,7 +66,7 @@ export async function list(options: ListOptions = {}): Promise<void> {
 
     console.log('');
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : String(error);
+    const message = getErrorMessage(error);
     defaultIO.logError(`Failed to list: ${message}`);
     throw error;
   }

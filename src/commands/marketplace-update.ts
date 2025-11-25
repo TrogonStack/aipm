@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { getNotInitializedMessage, loadPluginsConfig } from '../config/loader';
+import { getErrorMessage } from '../errors';
 import { resolveMarketplacePath } from '../helpers/git';
 import { defaultIO } from '../helpers/io';
 
@@ -48,7 +49,7 @@ export async function marketplaceUpdate(options: unknown): Promise<void> {
     defaultIO.logSuccess(`Updated marketplace '${cmd.name}'`);
     console.log(`\n✨ Marketplace '${cmd.name}' updated successfully!\n`);
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : String(error);
+    const message = getErrorMessage(error);
     defaultIO.logError(`Failed to update marketplace: ${message}`);
     throw error;
   }

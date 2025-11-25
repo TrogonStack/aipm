@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import { z } from 'zod';
 import { getNotInitializedMessage, loadPluginsConfig } from '../config/loader';
 import { DIR_AIPM_NAMESPACE, DIR_MARKETPLACE, PLUGIN_SUBDIRS } from '../constants';
+import { getErrorMessage } from '../errors';
 import { ensureDir, fileExists } from '../helpers/fs';
 import { resolveMarketplacePath } from '../helpers/git';
 import { defaultIO } from '../helpers/io';
@@ -12,6 +13,7 @@ import {
   isPluginInManifest,
   loadMarketplaceManifest,
 } from '../helpers/marketplace';
+import { tryParsePluginId } from '../helpers/plugin';
 import { formatSyncResult, syncPluginToCursor } from '../helpers/sync-strategy';
 import type { IntegrationConfigSchema } from '../schema';
 
@@ -96,13 +98,14 @@ export async function sync(options: SyncOptions = {}): Promise<void> {
     let skippedCount = 0;
 
     for (const pluginId of enabledPlugins) {
-      const [pluginName, marketplaceName] = pluginId.split('@');
-
-      if (!pluginName || !marketplaceName) {
+      const parsed = tryParsePluginId(pluginId);
+      if (!parsed) {
         defaultIO.logError(`Invalid plugin ID format: ${pluginId} (expected: plugin@marketplace)`);
         skippedCount++;
         continue;
       }
+
+      const { pluginName, marketplaceName } = parsed;
 
       const marketplace = config.marketplaces[marketplaceName];
 
@@ -192,7 +195,7 @@ export async function sync(options: SyncOptions = {}): Promise<void> {
       console.log(`⚠️  Skipped ${skippedCount} plugin(s)`);
     }
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : String(error);
+    const message = getErrorMessage(error);
     defaultIO.logError(`Failed to sync: ${message}`);
     throw error;
   }

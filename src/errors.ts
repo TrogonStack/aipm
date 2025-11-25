@@ -6,6 +6,14 @@ export function isFileNotFoundError(error: unknown): error is NodeJS.ErrnoExcept
   return isNodeError(error) && error.code === 'ENOENT';
 }
 
+export function isFileExistsError(error: unknown): error is NodeJS.ErrnoException {
+  return isNodeError(error) && error.code === 'EEXIST';
+}
+
+export function getErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
 export class PluginManifestNotFoundError extends Error {
   constructor(
     public readonly pluginPath: string,

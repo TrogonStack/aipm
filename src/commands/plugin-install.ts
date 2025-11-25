@@ -3,12 +3,13 @@ import { join } from 'node:path';
 import { z } from 'zod';
 import { getConfigPath, getNotInitializedMessage, loadPluginsConfig } from '../config/loader';
 import { DIR_CURSOR, FILE_AIPM_CONFIG, FILE_AIPM_CONFIG_LOCAL } from '../constants';
+import { getErrorMessage } from '../errors';
 import { loadTargetConfig, saveConfig } from '../helpers/aipm-config';
 import { fileExists } from '../helpers/fs';
 import { resolveMarketplacePath } from '../helpers/git';
 import { defaultIO } from '../helpers/io';
 import { getMarketplaceType, loadMarketplaceManifest, resolvePluginPath } from '../helpers/marketplace';
-import { isMetaPlugin, validatePluginStructure } from '../helpers/plugin';
+import { isMetaPlugin, parsePluginId, validatePluginStructure } from '../helpers/plugin';
 import { formatSyncResult, syncMetaPluginToCursor, syncPluginToCursor } from '../helpers/sync-strategy';
 
 const PluginInstallOptionsSchema = z.object({
@@ -34,13 +35,7 @@ export async function pluginInstall(options: unknown): Promise<void> {
     }
     const configName = cmd.local ? getConfigPath(FILE_AIPM_CONFIG_LOCAL) : getConfigPath(FILE_AIPM_CONFIG);
 
-    const [pluginName, marketplaceName] = cmd.pluginId.split('@');
-
-    if (!pluginName || !marketplaceName) {
-      const error = new Error(`Invalid plugin ID format: ${cmd.pluginId} (expected: plugin@marketplace)`);
-      defaultIO.logError(error.message);
-      throw error;
-    }
+    const { pluginName, marketplaceName } = parsePluginId(cmd.pluginId);
 
     const marketplace = config.marketplaces[marketplaceName];
 
@@ -88,7 +83,7 @@ export async function pluginInstall(options: unknown): Promise<void> {
         const isMetaPluginCheck = isMetaPlugin(marketplacePath, pluginPath, manifest);
         await validatePluginStructure(pluginPath, { isMetaPlugin: isMetaPluginCheck });
       } catch (error: unknown) {
-        const message = error instanceof Error ? error.message : String(error);
+        const message = getErrorMessage(error);
         const validationError = new Error(`Invalid plugin '${pluginName}': ${message}`);
         defaultIO.logError(validationError.message);
         throw validationError;
@@ -135,7 +130,7 @@ export async function pluginInstall(options: unknown): Promise<void> {
     defaultIO.logSuccess(`Installed ${cmd.pluginId}`);
     console.log(`\n✨ Plugin '${cmd.pluginId}' installed successfully! (${summary})\n`);
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : String(error);
+    const message = getErrorMessage(error);
     defaultIO.logError(`Failed to install plugin: ${message}`);
     throw error;
   }

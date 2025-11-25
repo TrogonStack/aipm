@@ -3,6 +3,7 @@ import { ZodError } from 'zod';
 import packageJson from '../package.json';
 import {
   DirectoryNotFoundError,
+  getErrorMessage,
   PluginManifestInvalidError,
   PluginManifestNotFoundError,
   PluginNotFoundError,
@@ -270,7 +271,7 @@ async function main() {
         console.error(`Cause: ${error.cause instanceof Error ? error.cause.message : String(error.cause)}`);
       }
     } else {
-      const message = error instanceof Error ? error.message : String(error);
+      const message = getErrorMessage(error);
       console.error(`Error: ${message}`);
     }
     process.exit(1);
