@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { loadPluginManifest, validatePluginStructure } from '../../src/helpers/plugin';
+import { loadPluginManifest, parsePluginId, tryParsePluginId, validatePluginStructure } from '../../src/helpers/plugin';
 
 describe('plugin', () => {
   let testDir: string;
@@ -181,6 +181,69 @@ describe('plugin', () => {
       );
 
       await expect(validatePluginStructure(pluginDir)).rejects.toThrow();
+    });
+  });
+
+  describe('parsePluginId', () => {
+    test('should parse valid plugin ID', () => {
+      const result = parsePluginId('my-plugin@marketplace');
+      expect(result.pluginName).toBe('my-plugin');
+      expect(result.marketplaceName).toBe('marketplace');
+    });
+
+    test('should parse plugin ID with hyphens and underscores', () => {
+      const result = parsePluginId('my_plugin-v2@my-marketplace');
+      expect(result.pluginName).toBe('my_plugin-v2');
+      expect(result.marketplaceName).toBe('my-marketplace');
+    });
+
+    test('should error on invalid format without @', () => {
+      expect(() => parsePluginId('invalid-format')).toThrow('Invalid plugin ID format');
+    });
+
+    test('should error on empty plugin name', () => {
+      expect(() => parsePluginId('@marketplace')).toThrow('Invalid plugin ID format');
+    });
+
+    test('should error on empty marketplace name', () => {
+      expect(() => parsePluginId('plugin@')).toThrow('Invalid plugin ID format');
+    });
+
+    test('should error on multiple @ symbols', () => {
+      expect(() => parsePluginId('plugin@scope@marketplace')).toThrow('Invalid plugin ID format');
+    });
+
+    test('should error on empty string', () => {
+      expect(() => parsePluginId('')).toThrow('Invalid plugin ID format');
+    });
+  });
+
+  describe('tryParsePluginId', () => {
+    test('should return parsed result for valid plugin ID', () => {
+      const result = tryParsePluginId('my-plugin@marketplace');
+      expect(result).not.toBeNull();
+      expect(result?.pluginName).toBe('my-plugin');
+      expect(result?.marketplaceName).toBe('marketplace');
+    });
+
+    test('should return null for invalid format', () => {
+      expect(tryParsePluginId('invalid-format')).toBeNull();
+    });
+
+    test('should return null for empty plugin name', () => {
+      expect(tryParsePluginId('@marketplace')).toBeNull();
+    });
+
+    test('should return null for empty marketplace name', () => {
+      expect(tryParsePluginId('plugin@')).toBeNull();
+    });
+
+    test('should return null for multiple @ symbols', () => {
+      expect(tryParsePluginId('plugin@scope@marketplace')).toBeNull();
+    });
+
+    test('should return null for empty string', () => {
+      expect(tryParsePluginId('')).toBeNull();
     });
   });
 });

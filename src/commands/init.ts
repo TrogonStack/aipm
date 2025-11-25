@@ -2,6 +2,7 @@ import { realpathSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { getConfigPath, getConfigPaths } from '../config/loader';
 import { DIR_AIPM, FILE_AIPM_CONFIG, FILE_AIPM_CONFIG_LOCAL, FILE_GITIGNORE } from '../constants';
+import { getErrorMessage } from '../errors';
 import { saveAIPMConfig } from '../helpers/aipm-config';
 import { backupFile, ensureDir, fileExists, writeJsonFile } from '../helpers/fs';
 import { findGitRoot } from '../helpers/git';
@@ -22,7 +23,7 @@ export async function init(options: InitOptions = {}): Promise<void> {
 
     await initProject(paths, options, io);
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : String(error);
+    const message = getErrorMessage(error);
     io.logError(`Failed to initialize: ${message}`);
     throw error;
   }

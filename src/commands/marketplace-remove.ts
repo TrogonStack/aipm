@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { getConfigPath, getNotInitializedMessage, loadPluginsConfig } from '../config/loader';
 import { FILE_AIPM_CONFIG, FILE_AIPM_CONFIG_LOCAL } from '../constants';
+import { getErrorMessage } from '../errors';
 import { loadTargetConfig, saveConfig } from '../helpers/aipm-config';
 import { defaultIO } from '../helpers/io';
 
@@ -54,7 +55,7 @@ export async function marketplaceRemove(options: unknown): Promise<void> {
       defaultIO.logSuccess(`Removed marketplace '${cmd.name}' from ${configName}`);
     }
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : String(error);
+    const message = getErrorMessage(error);
     defaultIO.logError(`Failed to remove marketplace: ${message}`);
     throw error;
   }

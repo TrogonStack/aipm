@@ -2,6 +2,7 @@ import { join } from 'node:path';
 import { z } from 'zod';
 import { getNotInitializedMessage, loadPluginsConfig } from '../config/loader';
 import { DIR_CURSOR } from '../constants';
+import { getErrorMessage } from '../errors';
 import { fileExists } from '../helpers/fs';
 import { resolveMarketplacePath } from '../helpers/git';
 import { defaultIO } from '../helpers/io';
@@ -11,7 +12,7 @@ import {
   isPluginInManifest,
   loadMarketplaceManifest,
 } from '../helpers/marketplace';
-import { validatePluginStructure } from '../helpers/plugin';
+import { parsePluginId, validatePluginStructure } from '../helpers/plugin';
 import { formatSyncResult, syncPluginToCursor } from '../helpers/sync-strategy';
 
 const PluginUpdateOptionsSchema = z.object({
@@ -40,13 +41,7 @@ export async function pluginUpdate(options: unknown): Promise<void> {
       throw error;
     }
 
-    const [pluginName, marketplaceName] = cmd.pluginId.split('@');
-
-    if (!pluginName || !marketplaceName) {
-      const error = new Error(`Invalid plugin ID format: ${cmd.pluginId} (expected: plugin@marketplace)`);
-      defaultIO.logError(error.message);
-      throw error;
-    }
+    const { pluginName, marketplaceName } = parsePluginId(cmd.pluginId);
 
     const marketplace = config.marketplaces[marketplaceName];
 
@@ -88,7 +83,7 @@ export async function pluginUpdate(options: unknown): Promise<void> {
       try {
         await validatePluginStructure(pluginPath);
       } catch (error: unknown) {
-        const message = error instanceof Error ? error.message : String(error);
+        const message = getErrorMessage(error);
         const validationError = new Error(`Invalid plugin '${pluginName}': ${message}`);
         defaultIO.logError(validationError.message);
         throw validationError;
@@ -107,7 +102,7 @@ export async function pluginUpdate(options: unknown): Promise<void> {
     defaultIO.logSuccess(`Updated ${cmd.pluginId}`);
     console.log(`\n✨ Plugin '${cmd.pluginId}' updated successfully! (${summary})\n`);
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : String(error);
+    const message = getErrorMessage(error);
     defaultIO.logError(`Failed to update plugin: ${message}`);
     throw error;
   }
