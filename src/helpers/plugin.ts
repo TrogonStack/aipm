@@ -1,7 +1,7 @@
-import { join } from 'node:path';
+import { join, normalize } from 'node:path';
 import { DIR_CLAUDE_PLUGIN, FILE_PLUGIN_MANIFEST } from '../constants';
 import { isFileNotFoundError, PluginManifestInvalidError, PluginManifestNotFoundError } from '../errors';
-import type { PluginManifest } from '../schema';
+import type { MarketplaceManifest, PluginManifest } from '../schema';
 import { PluginManifestSchema } from '../schema';
 import { readJsonFile } from './fs';
 
@@ -19,7 +19,31 @@ export async function loadPluginManifest(pluginPath: string): Promise<PluginMani
   }
 }
 
-export async function validatePluginStructure(pluginPath: string): Promise<void> {
+export function isMetaPlugin(
+  marketplacePath: string,
+  pluginPath: string,
+  marketplaceManifest: MarketplaceManifest | null,
+): boolean {
+  if (!marketplaceManifest) {
+    return false;
+  }
+
+  const normalizedMarketplace = normalize(marketplacePath).replace(/\/$/, '');
+  const normalizedPlugin = normalize(pluginPath).replace(/\/$/, '');
+
+  return normalizedMarketplace === normalizedPlugin;
+}
+
+export async function validatePluginStructure(
+  pluginPath: string,
+  options?: {
+    isMetaPlugin?: boolean;
+  },
+): Promise<void> {
+  if (options?.isMetaPlugin) {
+    return;
+  }
+
   const manifest = await loadPluginManifest(pluginPath);
 
   if (!manifest.name) {

@@ -14,6 +14,13 @@ export function getMarketplaceType(marketplaceName: string): MarketplaceType {
   return marketplaceName.startsWith('claude/') ? 'claude' : 'aipm';
 }
 
+/**
+ * Creates a predicate function to find a plugin by name.
+ * @param name - The plugin name to search for
+ * @returns A predicate function that returns true if the plugin name matches
+ */
+export const hasPluginName = (name: string) => (plugin: { name: string }) => plugin.name === name;
+
 export async function loadAipmMarketplaceManifest(marketplacePath: string): Promise<MarketplaceManifest | null> {
   const manifestPath = join(marketplacePath, FILE_MARKETPLACE_MANIFEST);
 

@@ -31,6 +31,8 @@ export const MarketplacePluginEntrySchema = z.object({
       email: z.string().optional(),
     })
     .optional(),
+  skills: z.array(z.string()).optional(),
+  strict: z.boolean().optional(),
 });
 
 export const MarketplaceManifestSchema = z.object({

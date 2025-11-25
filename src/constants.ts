@@ -15,6 +15,11 @@ export const PLUGIN_SUBDIRS = ['commands', 'rules', 'agents', 'skills', 'hooks']
 export type PluginSubdir = (typeof PLUGIN_SUBDIRS)[number];
 
 /**
+ * Individual subdirectory names (for direct reference)
+ */
+export const DIR_SKILLS = 'skills' as const;
+
+/**
  * Project-level AIPM directory
  */
 export const DIR_AIPM = '.aipm';

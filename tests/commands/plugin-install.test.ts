@@ -601,4 +601,132 @@ describe('plugin-install', () => {
       expect(config.plugins['my-plugin@local'].enabled).toBe(true);
     });
   });
+
+  describe('Claude Code meta-plugin support', () => {
+    test('should install Claude Code meta-plugin with source="./"', async () => {
+      const marketplaceDir = join(testDir, 'marketplace');
+      await mkdir(marketplaceDir, { recursive: true });
+
+      await mkdir(join(marketplaceDir, '.claude-plugin'), { recursive: true });
+      await writeFile(
+        join(marketplaceDir, '.claude-plugin', 'marketplace.json'),
+        JSON.stringify({
+          name: 'test-marketplace',
+          owner: { name: 'Test Owner', email: 'test@example.com' },
+          metadata: {
+            description: 'Test marketplace',
+            version: '1.0.0',
+          },
+          plugins: [
+            {
+              name: 'document-skills',
+              description: 'Document processing skills',
+              source: './',
+              strict: false,
+              skills: ['./document-skills/xlsx', './document-skills/docx'],
+            },
+          ],
+        }),
+      );
+
+      await mkdir(join(marketplaceDir, 'document-skills', 'xlsx'), { recursive: true });
+      await writeFile(join(marketplaceDir, 'document-skills', 'xlsx', 'skill.md'), '# XLSX processing skill');
+      await mkdir(join(marketplaceDir, 'document-skills', 'docx'), { recursive: true });
+      await writeFile(join(marketplaceDir, 'document-skills', 'docx', 'skill.md'), '# DOCX processing skill');
+
+      const pluginsPath = join(testDir, '.aipm', 'config.json');
+      const aipmDir = join(testDir, '.aipm');
+      await mkdir(aipmDir, { recursive: true });
+      await writeFile(
+        pluginsPath,
+        JSON.stringify({
+          marketplaces: {
+            'claude/test-marketplace': { source: 'directory', path: './marketplace' },
+          },
+          plugins: {},
+        }),
+      );
+
+      const options = {
+        pluginId: 'document-skills@claude/test-marketplace',
+        cwd: testDir,
+      };
+
+      await pluginInstall(options);
+
+      const config = JSON.parse(await Bun.file(pluginsPath).text());
+      expect(config.plugins['document-skills@claude/test-marketplace']).toBeDefined();
+      expect(config.plugins['document-skills@claude/test-marketplace'].enabled).toBe(true);
+
+      const xlsxSkillPath = join(
+        testDir,
+        '.cursor',
+        'skills',
+        'aipm',
+        'claude',
+        'test-marketplace',
+        'document-skills',
+        'xlsx',
+        'skill.md',
+      );
+      const docxSkillPath = join(
+        testDir,
+        '.cursor',
+        'skills',
+        'aipm',
+        'claude',
+        'test-marketplace',
+        'document-skills',
+        'docx',
+        'skill.md',
+      );
+
+      expect(await fileExists(xlsxSkillPath)).toBe(true);
+      expect(await fileExists(docxSkillPath)).toBe(true);
+    });
+
+    test('should handle meta-plugin with no skills array', async () => {
+      const marketplaceDir = join(testDir, 'marketplace');
+      await mkdir(marketplaceDir, { recursive: true });
+
+      await mkdir(join(marketplaceDir, '.claude-plugin'), { recursive: true });
+      await writeFile(
+        join(marketplaceDir, '.claude-plugin', 'marketplace.json'),
+        JSON.stringify({
+          name: 'test-marketplace',
+          owner: { name: 'Test Owner' },
+          plugins: [
+            {
+              name: 'simple-plugin',
+              source: './',
+            },
+          ],
+        }),
+      );
+
+      const pluginsPath = join(testDir, '.aipm', 'config.json');
+      const aipmDir = join(testDir, '.aipm');
+      await mkdir(aipmDir, { recursive: true });
+      await writeFile(
+        pluginsPath,
+        JSON.stringify({
+          marketplaces: {
+            'claude/test-marketplace': { source: 'directory', path: './marketplace' },
+          },
+          plugins: {},
+        }),
+      );
+
+      const options = {
+        pluginId: 'simple-plugin@claude/test-marketplace',
+        cwd: testDir,
+      };
+
+      await pluginInstall(options);
+
+      const config = JSON.parse(await Bun.file(pluginsPath).text());
+      expect(config.plugins['simple-plugin@claude/test-marketplace']).toBeDefined();
+      expect(config.plugins['simple-plugin@claude/test-marketplace'].enabled).toBe(true);
+    });
+  });
 });

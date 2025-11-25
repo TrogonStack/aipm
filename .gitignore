@@ -40,3 +40,6 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 # TrogonAI internal files
 .trogonai/
 *.internal.trogonai.md
+
+# AIPM local configuration
+.aipm/config.local.json
