@@ -6,7 +6,9 @@ import { init } from '../../src/commands/init';
 import { marketplaceAdd } from '../../src/commands/marketplace-add';
 import { pluginEnable } from '../../src/commands/plugin-enable';
 import { sync } from '../../src/commands/sync';
-import { fileExists } from '../../src/helpers/fs';
+import { FILE_HOOKS_JSON } from '../../src/constants';
+import { fileExists, readJsonFile } from '../../src/helpers/fs';
+import type { CursorHooksConfig } from '../../src/schema';
 
 describe('sync command', () => {
   let testDir: string;
@@ -504,6 +506,209 @@ describe('sync command', () => {
         true,
       );
       expect(await fileExists(join(testDir, '.cursor', 'hooks', 'aipm', 'local', 'test-plugin', 'test.md'))).toBe(true);
+    });
+
+    test('translates Claude Code hooks.json to Cursor format', async () => {
+      // Create plugin with Claude Code hooks.json
+      const pluginPath = join(marketplaceDir, 'test-plugin');
+      await mkdir(pluginPath, { recursive: true });
+      await mkdir(join(pluginPath, '.claude-plugin'));
+      await writeFile(
+        join(pluginPath, '.claude-plugin', 'plugin.json'),
+        JSON.stringify({
+          name: 'test-plugin',
+          version: '1.0.0',
+          description: 'Test plugin',
+        }),
+      );
+
+      await mkdir(join(pluginPath, 'hooks'));
+      // Create scripts directory at plugin root (where hooks.json references them)
+      await mkdir(join(pluginPath, 'scripts'), { recursive: true });
+      await writeFile(join(pluginPath, 'scripts', 'test.js'), 'console.log("test");');
+
+      // Create Claude Code hooks.json
+      const claudeHooks = {
+        hooks: {
+          SessionStart: [
+            {
+              hooks: [
+                {
+                  type: 'command',
+                  command: 'node ${CLAUDE_PLUGIN_ROOT}/scripts/test.js',
+                },
+              ],
+            },
+          ],
+          Stop: [
+            {
+              hooks: [
+                {
+                  type: 'command',
+                  command: 'node ${CLAUDE_PLUGIN_ROOT}/scripts/test.js',
+                },
+              ],
+            },
+          ],
+        },
+      };
+      await writeFile(join(pluginPath, 'hooks', 'hooks.json'), JSON.stringify(claudeHooks, null, 2));
+
+      await marketplaceAdd({
+        name: 'local',
+        path: './marketplace',
+        cwd: testDir,
+      });
+      await pluginEnable({
+        pluginId: 'test-plugin@local',
+        cwd: testDir,
+      });
+
+      await sync({ cwd: testDir });
+
+      // Verify hooks.json was created and translated
+      const hooksJsonPath = join(testDir, '.cursor', FILE_HOOKS_JSON);
+      expect(await fileExists(hooksJsonPath)).toBe(true);
+
+      const hooksConfig = await readJsonFile<CursorHooksConfig>(hooksJsonPath);
+      expect(hooksConfig.version).toBe(1);
+      expect(hooksConfig.hooks.beforeSubmitPrompt).toBeDefined();
+      expect(hooksConfig.hooks.beforeSubmitPrompt?.length).toBeGreaterThan(0);
+      expect(hooksConfig.hooks.beforeSubmitPrompt?.[0]?.['x-managedBy']).toBe('aipm');
+      expect(hooksConfig.hooks.beforeSubmitPrompt?.[0]?.['x-hookId']).toContain('aipm/local/test-plugin');
+      expect(hooksConfig.hooks.beforeSubmitPrompt?.[0]?.command).not.toContain('${CLAUDE_PLUGIN_ROOT}');
+      expect(hooksConfig.hooks.beforeSubmitPrompt?.[0]?.command).toContain('scripts/test.js');
+      // Paths should point to the actual plugin path (absolute)
+      const command = hooksConfig.hooks.beforeSubmitPrompt?.[0]?.command || '';
+      expect(command).toContain(pluginPath); // Should contain the absolute pluginPath
+      // Extract the path from the command and verify it's absolute
+      const pathMatch = command.match(/(\/[^\s"]+|"[^"]+")/);
+      expect(pathMatch).toBeTruthy();
+      const extractedPath = pathMatch![0].replace(/^"|"$/g, ''); // Remove quotes if present
+      expect(extractedPath).toMatch(/^\/|^[A-Z]:/); // Should be absolute path (Unix or Windows)
+
+      expect(hooksConfig.hooks.stop).toBeDefined();
+      expect(hooksConfig.hooks.stop?.length).toBeGreaterThan(0);
+      expect(hooksConfig.hooks.stop?.[0]?.['x-managedBy']).toBe('aipm');
+
+      // Verify hook scripts were NOT copied (they stay in global plugin location)
+      expect(
+        await fileExists(join(testDir, '.cursor', 'hooks', 'aipm', 'local', 'test-plugin', 'scripts', 'test.js')),
+      ).toBe(false);
+    });
+
+    test('cleans up hooks when plugin is disabled', async () => {
+      // Create plugin with hooks
+      const pluginPath = join(marketplaceDir, 'test-plugin');
+      await mkdir(pluginPath, { recursive: true });
+      await mkdir(join(pluginPath, '.claude-plugin'));
+      await writeFile(
+        join(pluginPath, '.claude-plugin', 'plugin.json'),
+        JSON.stringify({
+          name: 'test-plugin',
+          version: '1.0.0',
+          description: 'Test plugin',
+        }),
+      );
+
+      await mkdir(join(pluginPath, 'hooks'));
+      await mkdir(join(pluginPath, 'scripts'), { recursive: true });
+      await writeFile(join(pluginPath, 'scripts', 'test.js'), 'console.log("test");');
+
+      const claudeHooks = {
+        hooks: {
+          SessionStart: [
+            {
+              hooks: [
+                {
+                  type: 'command',
+                  command: 'node ${CLAUDE_PLUGIN_ROOT}/scripts/test.js',
+                },
+              ],
+            },
+          ],
+        },
+      };
+      await writeFile(join(pluginPath, 'hooks', 'hooks.json'), JSON.stringify(claudeHooks, null, 2));
+
+      await marketplaceAdd({
+        name: 'local',
+        path: './marketplace',
+        cwd: testDir,
+      });
+      await pluginEnable({
+        pluginId: 'test-plugin@local',
+        cwd: testDir,
+      });
+
+      // Sync to create hooks.json
+      await sync({ cwd: testDir });
+
+      // Verify hooks were created
+      const hooksJsonPath = join(testDir, '.cursor', FILE_HOOKS_JSON);
+      expect(await fileExists(hooksJsonPath)).toBe(true);
+      let hooksConfig = await readJsonFile<CursorHooksConfig>(hooksJsonPath);
+      expect(hooksConfig.hooks.beforeSubmitPrompt?.length).toBeGreaterThan(0);
+
+      // Disable the plugin
+      const { pluginDisable } = await import('../../src/commands/plugin-disable');
+      await pluginDisable({
+        pluginId: 'test-plugin@local',
+        cwd: testDir,
+      });
+
+      // Sync again - hooks should be cleaned up
+      await sync({ cwd: testDir });
+
+      // Verify hooks were removed
+      expect(await fileExists(hooksJsonPath)).toBe(true);
+      hooksConfig = await readJsonFile<CursorHooksConfig>(hooksJsonPath);
+      // Hooks from disabled plugin should be removed
+      if (hooksConfig.hooks.beforeSubmitPrompt) {
+        const pluginHooks = hooksConfig.hooks.beforeSubmitPrompt.filter((hook) => {
+          const h = hook as any;
+          return h['x-hookId']?.startsWith('aipm/local/test-plugin/');
+        });
+        expect(pluginHooks.length).toBe(0);
+      } else {
+        // No hooks left - this is valid (hooks were cleaned up)
+        expect(hooksConfig.hooks.beforeSubmitPrompt).toBeUndefined();
+      }
+    });
+
+    test('cleans up hooks when sync runs with no enabled plugins', async () => {
+      // Create hooks.json with hooks from a plugin
+      const hooksJsonPath = join(testDir, '.cursor', FILE_HOOKS_JSON);
+      await mkdir(join(testDir, '.cursor'), { recursive: true });
+      const hooksConfig: CursorHooksConfig = {
+        version: 1,
+        hooks: {
+          beforeSubmitPrompt: [
+            {
+              'x-managedBy': 'aipm',
+              'x-hookId': 'aipm/local/test-plugin/hook1',
+              command: 'node /path/to/script.js',
+            },
+          ],
+        },
+      };
+      await writeFile(hooksJsonPath, JSON.stringify(hooksConfig, null, 2));
+
+      // Sync with no enabled plugins
+      await sync({ cwd: testDir });
+
+      // Verify hooks were cleaned up (all AIPM hooks removed)
+      // mergeHooks always creates hooks.json, so it should exist
+      expect(await fileExists(hooksJsonPath)).toBe(true);
+      const updatedHooks = await readJsonFile<CursorHooksConfig>(hooksJsonPath);
+      // Should not have any AIPM hooks
+      if (updatedHooks.hooks.beforeSubmitPrompt) {
+        const aipmHooks = updatedHooks.hooks.beforeSubmitPrompt.filter((hook) => hook['x-managedBy'] === 'aipm');
+        expect(aipmHooks.length).toBe(0);
+      } else {
+        // No hooks left - this is valid (all AIPM hooks were cleaned up)
+        expect(updatedHooks.hooks.beforeSubmitPrompt).toBeUndefined();
+      }
     });
   });
 });

@@ -2,10 +2,11 @@ import { rm, stat } from 'node:fs/promises';
 import { join } from 'node:path';
 import { z } from 'zod';
 import { getNotInitializedMessage, loadPluginsConfig } from '../config/loader';
-import { DIR_AIPM_NAMESPACE, DIR_MARKETPLACE, PLUGIN_SUBDIRS } from '../constants';
+import { DIR_AIPM_NAMESPACE, DIR_HOOKS, DIR_MARKETPLACE, INTEGRATION_INCLUDE_ALL, PLUGIN_SUBDIRS } from '../constants';
 import { getErrorMessage } from '../errors';
 import { ensureDir, fileExists } from '../helpers/fs';
 import { resolveMarketplacePath } from '../helpers/git';
+import { mergeHooks } from '../helpers/hooks-merger';
 import { defaultIO } from '../helpers/io';
 import {
   getMarketplaceType,
@@ -15,7 +16,7 @@ import {
 } from '../helpers/marketplace';
 import { tryParsePluginId } from '../helpers/plugin';
 import { formatSyncResult, syncPluginToCursor } from '../helpers/sync-strategy';
-import type { IntegrationConfigSchema } from '../schema';
+import type { CursorHooksConfig, IntegrationConfigSchema } from '../schema';
 
 const SyncOptionsSchema = z.object({
   cwd: z.string().optional(),
@@ -26,14 +27,17 @@ type SyncOptions = z.infer<typeof SyncOptionsSchema>;
 
 function isSubdirEnabled(
   subdir: string,
-  includeConfig: Exclude<z.infer<typeof IntegrationConfigSchema>['include'], 'all' | undefined>,
+  includeConfig: Exclude<
+    z.infer<typeof IntegrationConfigSchema>['include'],
+    typeof INTEGRATION_INCLUDE_ALL | undefined
+  >,
 ): boolean {
   const flag = includeConfig[subdir as keyof typeof includeConfig];
   return flag !== false;
 }
 
 function getEnabledSubdirs(includeConfig: z.infer<typeof IntegrationConfigSchema>['include']): readonly string[] {
-  if (!includeConfig || includeConfig === 'all') {
+  if (!includeConfig || includeConfig === INTEGRATION_INCLUDE_ALL) {
     return PLUGIN_SUBDIRS;
   }
 
@@ -67,8 +71,15 @@ export async function sync(options: SyncOptions = {}): Promise<void> {
       .filter(([_, plugin]) => plugin.enabled)
       .map(([id, _]) => id);
 
+    // Collect hooks early to enable cleanup even if no plugins are enabled
+    const collectedPluginHooks: CursorHooksConfig[] = [];
+
     if (enabledPlugins.length === 0) {
       defaultIO.logInfo('No enabled plugins found');
+      // Clean up hooks from disabled/uninstalled plugins
+      if (!cmd.dryRun) {
+        await mergeHooks(targetDir, collectedPluginHooks);
+      }
       return;
     }
 
@@ -163,9 +174,18 @@ export async function sync(options: SyncOptions = {}): Promise<void> {
       } else {
         const syncResult = await syncPluginToCursor(pluginPath, marketplaceName, pluginName, targetDir);
 
-        // Remove disabled types after syncing
         const includeConfig = cursorIntegration?.include;
-        if (includeConfig && includeConfig !== 'all') {
+
+        // Collect translated hooks if hooks subdirectory is enabled
+        if (syncResult.translatedHooks) {
+          const hooksEnabled =
+            !includeConfig || includeConfig === INTEGRATION_INCLUDE_ALL || isSubdirEnabled(DIR_HOOKS, includeConfig);
+          if (hooksEnabled) {
+            collectedPluginHooks.push(syncResult.translatedHooks);
+          }
+        }
+
+        if (includeConfig && includeConfig !== INTEGRATION_INCLUDE_ALL) {
           const disabledSubdirs = PLUGIN_SUBDIRS.filter((subdir) => !isSubdirEnabled(subdir, includeConfig));
 
           for (const subdir of disabledSubdirs) {
@@ -181,6 +201,11 @@ export async function sync(options: SyncOptions = {}): Promise<void> {
       }
 
       installedCount++;
+    }
+
+    // Merge hooks (even with empty array) to clean up hooks from disabled/uninstalled plugins
+    if (!cmd.dryRun) {
+      await mergeHooks(targetDir, collectedPluginHooks);
     }
 
     console.log('');
