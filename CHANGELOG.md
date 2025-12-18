@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.0](https://github.com/TrogonStack/aipm/compare/v0.4.5...v0.5.0) (2025-12-18)
+
+
+### Features
+
+* add hooks management and translation for Claude Code plugins ([#42](https://github.com/TrogonStack/aipm/issues/42)) ([4e478e7](https://github.com/TrogonStack/aipm/commit/4e478e75080f129c722f8e2bb9a3d57e322a1315))
+
 ## [0.4.5](https://github.com/TrogonStack/aipm/compare/v0.4.4...v0.4.5) (2025-11-25)
 
 
