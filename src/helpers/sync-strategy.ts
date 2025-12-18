@@ -1,10 +1,13 @@
-import { cp, readdir, readFile, writeFile } from 'node:fs/promises';
+import { cp, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { basename, extname, join } from 'node:path';
-import { DIR_AIPM_NAMESPACE, DIR_SKILLS } from '../constants';
+import { DIR_AIPM_NAMESPACE, DIR_HOOKS, DIR_SKILLS, FILE_HOOKS_JSON } from '../constants';
 import { DirectoryNotFoundError, isFileNotFoundError } from '../errors';
-import type { MarketplaceManifest } from '../schema';
+import type { CursorHooksConfig, MarketplaceManifest } from '../schema';
+import { ClaudeCodeHookSchema } from '../schema';
 import { applyCursorFrontmatter } from './frontmatter';
-import { ensureDir, fileExists } from './fs';
+import { ensureDir, fileExists, readJsonFile } from './fs';
+import { countTranslatedHooks, translateClaudeCodeHook } from './hooks-translator';
+import { defaultIO } from './io';
 import { hasPluginName } from './marketplace';
 
 export type AipmPluginSyncResult = {
@@ -14,6 +17,7 @@ export type AipmPluginSyncResult = {
   agentsCount: number;
   skillsCount: number;
   hooksCount: number;
+  translatedHooks?: CursorHooksConfig | null;
 };
 
 export type ClaudeCodePluginSyncResult = {
@@ -78,13 +82,10 @@ export async function syncPluginToCursor(
   );
   result.skillsCount = skillsResult;
 
-  // Sync hooks/* to .cursor/hooks/aipm/marketplace/plugin/
-  const hooksResult = await syncDirectory(
-    join(pluginPath, 'hooks'),
-    join(cursorDir, 'hooks', DIR_AIPM_NAMESPACE, marketplaceName, pluginName),
-    [], // Copy all files in hooks
-  );
-  result.hooksCount = hooksResult;
+  // Sync hooks - check for hooks.json and translate if needed
+  const hooksResult = await syncHooks(pluginPath, marketplaceName, pluginName, cursorDir);
+  result.hooksCount = hooksResult.count;
+  result.translatedHooks = hooksResult.translatedHooks;
 
   return result;
 }
@@ -159,6 +160,93 @@ async function syncRulesDirectory(sourceDir: string, targetDir: string): Promise
   }
 
   return count;
+}
+
+/**
+ * Sync hooks directory - translate Claude Code hooks.json if present, otherwise copy as-is
+ *
+ * @param pluginPath - Path to the plugin directory
+ * @param marketplaceName - Name of the marketplace
+ * @param pluginName - Name of the plugin
+ * @param cursorDir - The .cursor directory path
+ * @returns Object with count and translated hooks config (if applicable)
+ */
+async function syncHooks(
+  pluginPath: string,
+  marketplaceName: string,
+  pluginName: string,
+  cursorDir: string,
+): Promise<{ count: number; translatedHooks: CursorHooksConfig | null }> {
+  const hooksJsonPath = join(pluginPath, DIR_HOOKS, FILE_HOOKS_JSON);
+
+  if (await fileExists(hooksJsonPath)) {
+    try {
+      const claudeHook = await readJsonFile(hooksJsonPath, ClaudeCodeHookSchema);
+      const translated = translateClaudeCodeHook(claudeHook, marketplaceName, pluginName, pluginPath);
+      const count = countTranslatedHooks(translated);
+
+      const targetHooksDir = join(cursorDir, DIR_HOOKS, DIR_AIPM_NAMESPACE, marketplaceName, pluginName);
+      await syncDirectory(join(pluginPath, DIR_HOOKS), targetHooksDir, []);
+
+      // Remove copied hooks.json (already translated and merged)
+      const copiedHooksJson = join(targetHooksDir, FILE_HOOKS_JSON);
+      if (await fileExists(copiedHooksJson)) {
+        await rm(copiedHooksJson);
+      }
+
+      try {
+        const remainingFiles = await readdir(targetHooksDir);
+        if (remainingFiles.length === 0) {
+          await rm(targetHooksDir, { recursive: true });
+        }
+      } catch {
+        // Ignore - directory doesn't exist or can't be read
+      }
+
+      return { count, translatedHooks: translated };
+    } catch (error) {
+      defaultIO.logInfo(
+        `⚠️  Failed to translate hooks.json for ${pluginName}@${marketplaceName}: ${error}. Copying as-is.`,
+      );
+      const targetHooksDir = join(cursorDir, DIR_HOOKS, DIR_AIPM_NAMESPACE, marketplaceName, pluginName);
+      await syncDirectory(join(pluginPath, DIR_HOOKS), targetHooksDir, []);
+
+      const copiedHooksJson = join(targetHooksDir, FILE_HOOKS_JSON);
+      if (await fileExists(copiedHooksJson)) {
+        await rm(copiedHooksJson);
+      }
+
+      try {
+        const remainingFiles = await readdir(targetHooksDir);
+        if (remainingFiles.length === 0) {
+          await rm(targetHooksDir, { recursive: true });
+        }
+      } catch {
+        // Ignore - directory doesn't exist or can't be read
+      }
+
+      return { count: 0, translatedHooks: null };
+    }
+  } else {
+    const targetHooksDir = join(cursorDir, DIR_HOOKS, DIR_AIPM_NAMESPACE, marketplaceName, pluginName);
+    await syncDirectory(join(pluginPath, DIR_HOOKS), targetHooksDir, []);
+
+    const copiedHooksJson = join(targetHooksDir, FILE_HOOKS_JSON);
+    if (await fileExists(copiedHooksJson)) {
+      await rm(copiedHooksJson);
+    }
+
+    try {
+      const remainingFiles = await readdir(targetHooksDir);
+      if (remainingFiles.length === 0) {
+        await rm(targetHooksDir, { recursive: true });
+      }
+    } catch {
+      // Ignore - directory doesn't exist or can't be read
+    }
+
+    return { count: 0, translatedHooks: null };
+  }
 }
 
 /**

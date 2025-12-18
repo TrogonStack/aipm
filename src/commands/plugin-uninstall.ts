@@ -3,16 +3,21 @@ import { join } from 'node:path';
 import { z } from 'zod';
 import { getConfigPath, getNotInitializedMessage, loadPluginsConfig } from '../config/loader';
 import {
+  AIPM_HOOK_PREFIX,
   DIR_AIPM_NAMESPACE,
   DIR_CURSOR,
   DIR_SKILLS,
   FILE_AIPM_CONFIG,
   FILE_AIPM_CONFIG_LOCAL,
+  FILE_HOOKS_JSON,
+  HOOK_ID_FIELD,
   PLUGIN_SUBDIRS,
 } from '../constants';
 import { getErrorMessage, isFileNotFoundError } from '../errors';
 import { loadTargetConfig, saveConfig } from '../helpers/aipm-config';
+import { writeJsonFile } from '../helpers/fs';
 import { resolveMarketplacePath } from '../helpers/git';
+import { readExistingHooks } from '../helpers/hooks-merger';
 import { defaultIO } from '../helpers/io';
 import {
   getMarketplaceType,
@@ -21,6 +26,8 @@ import {
   loadMarketplaceManifest,
 } from '../helpers/marketplace';
 import { isMetaPlugin, tryParsePluginId } from '../helpers/plugin';
+import type { CursorHooksConfig } from '../schema';
+import { AipmManagedHookSchema, UserHookSchema } from '../schema';
 
 const PluginUninstallOptionsSchema = z.object({
   pluginId: z.string().min(1),
@@ -169,6 +176,39 @@ export async function pluginUninstall(options: unknown): Promise<void> {
 
         if (deletedCount > 0) {
           defaultIO.logSuccess(`Deleted plugin files from ${deletedCount} location(s) in .cursor/`);
+        }
+
+        const cursorDir = join(cwd, DIR_CURSOR);
+        const hookIdPrefix = `${AIPM_HOOK_PREFIX}/${marketplaceName}/${pluginName}/`;
+        const existingHooks = await readExistingHooks(cursorDir);
+
+        if (existingHooks) {
+          const cleanedHooks: CursorHooksConfig = {
+            version: 1,
+            hooks: {},
+          };
+
+          for (const [eventName, hooks] of Object.entries(existingHooks.hooks)) {
+            const filteredHooks = hooks.filter((hook) => {
+              // safeParse returns success=false for malformed entries (null, primitives, arrays)
+              const aipmParseResult = AipmManagedHookSchema.safeParse(hook);
+
+              if (aipmParseResult.success) {
+                const aipmHook = aipmParseResult.data;
+                return !aipmHook[HOOK_ID_FIELD].startsWith(hookIdPrefix);
+              }
+
+              const userParseResult = UserHookSchema.safeParse(hook);
+              return userParseResult.success;
+            });
+
+            if (filteredHooks.length > 0) {
+              cleanedHooks.hooks[eventName] = filteredHooks;
+            }
+          }
+
+          const hooksPath = join(cursorDir, FILE_HOOKS_JSON);
+          await writeJsonFile(hooksPath, cleanedHooks, undefined, cmd.dryRun);
         }
       }
     }

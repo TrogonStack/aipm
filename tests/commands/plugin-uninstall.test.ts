@@ -3,8 +3,10 @@ import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { pluginUninstall } from '../../src/commands/plugin-uninstall';
+import { FILE_HOOKS_JSON } from '../../src/constants';
+import type { CursorHooksConfig } from '../../src/schema';
 
-import { fileExists } from '../../src/helpers/fs';
+import { fileExists, readJsonFile } from '../../src/helpers/fs';
 
 describe('plugin-uninstall', () => {
   let testDir: string;
@@ -636,6 +638,277 @@ describe('plugin-uninstall', () => {
 
       const config = JSON.parse(await Bun.file(pluginsPath).text());
       expect(config.plugins['regular-plugin@testmkt']).toBeUndefined();
+    });
+  });
+
+  describe('hooks cleanup', () => {
+    test('should remove hooks from hooks.json when uninstalling with removeFiles=true', async () => {
+      const pluginsPath = join(testDir, '.aipm', 'config.json');
+      const aipmDir = join(testDir, '.aipm');
+      await mkdir(aipmDir, { recursive: true });
+      await writeFile(
+        pluginsPath,
+        JSON.stringify({
+          marketplaces: { local: { source: 'directory', path: './plugins' } },
+          plugins: {
+            'plugin-with-hooks@local': { enabled: true },
+            'other-plugin@local': { enabled: true },
+          },
+        }),
+      );
+
+      // Create hooks.json with hooks from plugin-with-hooks and other-plugin
+      const hooksPath = join(testDir, '.cursor', FILE_HOOKS_JSON);
+      const hooksConfig: any = {
+        version: 1,
+        hooks: {
+          beforeSubmitPrompt: [
+            {
+              'x-managedBy': 'aipm',
+              'x-hookId': 'aipm/local/plugin-with-hooks/hook1',
+              command: 'node /path/to/script1.js',
+            },
+            {
+              'x-managedBy': 'aipm',
+              'x-hookId': 'aipm/local/other-plugin/hook1',
+              command: 'node /path/to/script2.js',
+            },
+            {
+              'x-managedBy': 'user',
+              'x-hookId': 'user/custom-hook',
+              command: 'node /path/to/user-script.js',
+            },
+          ],
+        },
+      };
+      await writeFile(hooksPath, JSON.stringify(hooksConfig, null, 2));
+
+      const options = {
+        pluginId: 'plugin-with-hooks@local',
+        cwd: testDir,
+        removeFiles: true,
+      };
+
+      await pluginUninstall(options);
+
+      // Verify hooks.json was updated
+      const updatedHooks = await readJsonFile<CursorHooksConfig>(hooksPath);
+      expect(updatedHooks.hooks.beforeSubmitPrompt).toBeDefined();
+      expect(updatedHooks.hooks.beforeSubmitPrompt?.length).toBe(2); // other-plugin hook + user hook
+
+      // Verify plugin-with-hooks hooks were removed
+      const pluginHooks = updatedHooks.hooks.beforeSubmitPrompt?.filter((hook) => {
+        const h = hook as any;
+        return h['x-hookId']?.startsWith('aipm/local/plugin-with-hooks/');
+      });
+      expect(pluginHooks?.length).toBe(0);
+
+      // Verify other-plugin hooks were preserved
+      const otherPluginHooks = updatedHooks.hooks.beforeSubmitPrompt?.filter((hook) => {
+        const h = hook as any;
+        return h['x-hookId']?.startsWith('aipm/local/other-plugin/');
+      });
+      expect(otherPluginHooks?.length).toBe(1);
+
+      // Verify user hooks were preserved (using type assertion since user hooks don't match strict schema)
+      const userHooks = updatedHooks.hooks.beforeSubmitPrompt?.filter((hook: any) => hook['x-managedBy'] === 'user');
+      expect(userHooks?.length).toBe(1);
+    });
+
+    test('should not modify hooks.json when uninstalling with removeFiles=false', async () => {
+      const pluginsPath = join(testDir, '.aipm', 'config.json');
+      const aipmDir = join(testDir, '.aipm');
+      await mkdir(aipmDir, { recursive: true });
+      await writeFile(
+        pluginsPath,
+        JSON.stringify({
+          marketplaces: { local: { source: 'directory', path: './plugins' } },
+          plugins: {
+            'plugin-with-hooks@local': { enabled: true },
+          },
+        }),
+      );
+
+      // Create hooks.json with hooks from plugin-with-hooks
+      const hooksPath = join(testDir, '.cursor', FILE_HOOKS_JSON);
+      const hooksConfig: CursorHooksConfig = {
+        version: 1,
+        hooks: {
+          beforeSubmitPrompt: [
+            {
+              'x-managedBy': 'aipm',
+              'x-hookId': 'aipm/local/plugin-with-hooks/hook1',
+              command: 'node /path/to/script1.js',
+            },
+          ],
+        },
+      };
+      await writeFile(hooksPath, JSON.stringify(hooksConfig, null, 2));
+
+      const options = {
+        pluginId: 'plugin-with-hooks@local',
+        cwd: testDir,
+        removeFiles: false,
+      };
+
+      await pluginUninstall(options);
+
+      // Verify hooks.json was NOT modified (hooks cleanup only happens with removeFiles=true)
+      const updatedHooks = await readJsonFile<CursorHooksConfig>(hooksPath);
+      expect(updatedHooks.hooks.beforeSubmitPrompt).toBeDefined();
+      expect(updatedHooks.hooks.beforeSubmitPrompt?.length).toBe(1);
+      expect(updatedHooks.hooks.beforeSubmitPrompt?.[0]?.['x-hookId']).toBe('aipm/local/plugin-with-hooks/hook1');
+    });
+
+    test('should handle missing hooks.json gracefully', async () => {
+      const pluginsPath = join(testDir, '.aipm', 'config.json');
+      const aipmDir = join(testDir, '.aipm');
+      await mkdir(aipmDir, { recursive: true });
+      await writeFile(
+        pluginsPath,
+        JSON.stringify({
+          marketplaces: { local: { source: 'directory', path: './plugins' } },
+          plugins: {
+            'plugin-with-hooks@local': { enabled: true },
+          },
+        }),
+      );
+
+      // Don't create hooks.json
+      const options = {
+        pluginId: 'plugin-with-hooks@local',
+        cwd: testDir,
+        removeFiles: true,
+      };
+
+      // Should not throw error
+      await pluginUninstall(options);
+
+      // hooks.json should not exist
+      const hooksPath = join(testDir, '.cursor', FILE_HOOKS_JSON);
+      expect(await fileExists(hooksPath)).toBe(false);
+    });
+
+    test('should handle malformed hooks.json with non-string x-hookId values', async () => {
+      const pluginsPath = join(testDir, '.aipm', 'config.json');
+      const aipmDir = join(testDir, '.aipm');
+      await mkdir(aipmDir, { recursive: true });
+      await writeFile(
+        pluginsPath,
+        JSON.stringify({
+          marketplaces: { local: { source: 'directory', path: './plugins' } },
+          plugins: {
+            'plugin-with-hooks@local': { enabled: true },
+          },
+        }),
+      );
+
+      // Create hooks.json with malformed x-hookId values (null, undefined, wrong type)
+      const hooksPath = join(testDir, '.cursor', FILE_HOOKS_JSON);
+      const hooksConfig: any = {
+        version: 1,
+        hooks: {
+          beforeSubmitPrompt: [
+            {
+              'x-managedBy': 'aipm',
+              'x-hookId': null, // null value
+              command: 'node /path/to/script1.js',
+            },
+            {
+              'x-managedBy': 'aipm',
+              'x-hookId': 123, // number instead of string
+              command: 'node /path/to/script2.js',
+            },
+            {
+              'x-managedBy': 'aipm',
+              'x-hookId': 'aipm/local/plugin-with-hooks/hook1',
+              command: 'node /path/to/script3.js',
+            },
+            {
+              'x-managedBy': 'user',
+              command: 'node /path/to/user-script.js',
+            },
+          ],
+        },
+      };
+      await writeFile(hooksPath, JSON.stringify(hooksConfig, null, 2));
+
+      const options = {
+        pluginId: 'plugin-with-hooks@local',
+        cwd: testDir,
+        removeFiles: true,
+      };
+
+      // Should not throw TypeError even with malformed x-hookId values
+      await pluginUninstall(options);
+
+      // Verify hooks.json was updated and malformed hooks were preserved
+      const updatedHooks = await readJsonFile<any>(hooksPath);
+      expect(updatedHooks.hooks.beforeSubmitPrompt).toBeDefined();
+
+      // Malformed hooks (null, number) are preserved due to type check failure
+      // Valid plugin hook is removed, user hook is preserved
+      // Expected: null hook + number hook + user hook = 3 hooks
+      expect(updatedHooks.hooks.beforeSubmitPrompt.length).toBe(3);
+
+      // Verify the valid plugin hook was removed
+      const validPluginHook = updatedHooks.hooks.beforeSubmitPrompt.find(
+        (hook: any) => hook['x-hookId'] === 'aipm/local/plugin-with-hooks/hook1',
+      );
+      expect(validPluginHook).toBeUndefined();
+
+      // Verify malformed hooks were preserved
+      const nullHook = updatedHooks.hooks.beforeSubmitPrompt.find((hook: any) => hook['x-hookId'] === null);
+      expect(nullHook).toBeDefined();
+
+      const numberHook = updatedHooks.hooks.beforeSubmitPrompt.find((hook: any) => hook['x-hookId'] === 123);
+      expect(numberHook).toBeDefined();
+    });
+
+    test('should not modify hooks.json when in dry-run mode', async () => {
+      const pluginsPath = join(testDir, '.aipm', 'config.json');
+      const aipmDir = join(testDir, '.aipm');
+      await mkdir(aipmDir, { recursive: true });
+      await writeFile(
+        pluginsPath,
+        JSON.stringify({
+          marketplaces: { local: { source: 'directory', path: './plugins' } },
+          plugins: {
+            'plugin-with-hooks@local': { enabled: true },
+          },
+        }),
+      );
+
+      // Create hooks.json with hooks from plugin-with-hooks
+      const hooksPath = join(testDir, '.cursor', FILE_HOOKS_JSON);
+      const originalHooksConfig: CursorHooksConfig = {
+        version: 1,
+        hooks: {
+          beforeSubmitPrompt: [
+            {
+              'x-managedBy': 'aipm',
+              'x-hookId': 'aipm/local/plugin-with-hooks/hook1',
+              command: 'node /path/to/script1.js',
+            },
+          ],
+        },
+      };
+      await writeFile(hooksPath, JSON.stringify(originalHooksConfig, null, 2));
+
+      const options = {
+        pluginId: 'plugin-with-hooks@local',
+        cwd: testDir,
+        removeFiles: true,
+        dryRun: true,
+      };
+
+      await pluginUninstall(options);
+
+      // Verify hooks.json was NOT modified (dry run should prevent modifications)
+      const updatedHooks = await readJsonFile<CursorHooksConfig>(hooksPath);
+      expect(updatedHooks.hooks.beforeSubmitPrompt).toBeDefined();
+      expect(updatedHooks.hooks.beforeSubmitPrompt?.length).toBe(1);
+      expect(updatedHooks.hooks.beforeSubmitPrompt?.[0]?.['x-hookId']).toBe('aipm/local/plugin-with-hooks/hook1');
     });
   });
 });

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { AIPM_HOOK_PREFIX } from './constants';
 import type { IO } from './helpers/io';
 
 export const MarketplaceSourceSchema = z.object({
@@ -153,3 +154,85 @@ export const ProcessEnvSchema = z.object({
 });
 
 export type ProcessEnv = z.infer<typeof ProcessEnvSchema>;
+
+/**
+ * Schema for Claude Code hooks.json format
+ */
+export const ClaudeCodeHookSchema = z.object({
+  description: z.string().optional(),
+  hooks: z.record(
+    z.string(),
+    z.array(
+      z.object({
+        matcher: z.string().optional(),
+        hooks: z.array(
+          z.object({
+            type: z.string(),
+            command: z.string(),
+            timeout: z.number().optional(),
+          }),
+        ),
+      }),
+    ),
+  ),
+});
+
+/**
+ * Schema for AIPM-managed hooks (strict validation)
+ * Use this for validating hooks that we create
+ */
+export const AipmManagedHookSchema = z.object({
+  'x-managedBy': z.literal(AIPM_HOOK_PREFIX),
+  'x-hookId': z.string(),
+  command: z.string(),
+});
+
+/**
+ * Schema for user hooks (flexible validation - allows any hook structure)
+ * User hooks must be objects with at least a command, but can have any additional properties
+ */
+export const UserHookSchema = z.object({ command: z.string() }).loose();
+
+/**
+ * Schema for validating individual hooks during parsing
+ * Accepts any JSON value to handle malformed entries gracefully during validation
+ * This is used ONLY for validation, not for TypeScript types
+ */
+const CursorHookValidationSchema = z.union([
+  AipmManagedHookSchema,
+  UserHookSchema,
+  z.null(), // Allow null entries (will be filtered out)
+  z.string(), // Allow primitive types (will be filtered out)
+  z.number(),
+  z.boolean(),
+  z.array(z.unknown()), // Allow arrays (will be filtered out)
+]);
+
+/**
+ * TypeScript type for valid hooks (union of AIPM and user hooks only)
+ * Does NOT include primitives/malformed data
+ */
+export type CursorHook = AipmManagedHook | UserHook;
+
+/**
+ * Schema for Cursor hooks.json configuration file
+ * Supports mixed hooks (both AIPM-managed and user-defined)
+ * Uses flexible validation to handle malformed entries gracefully
+ */
+export const CursorHooksConfigSchema = z.object({
+  version: z.literal(1),
+  hooks: z.record(z.string(), z.array(CursorHookValidationSchema)),
+});
+
+/**
+ * TypeScript type for CursorHooksConfig
+ * Uses the strict CursorHook type (not the validation schema)
+ */
+export type CursorHooksConfig = {
+  version: 1;
+  hooks: Record<string, CursorHook[]>;
+};
+
+export type ClaudeCodeHook = z.infer<typeof ClaudeCodeHookSchema>;
+export type AipmManagedHook = z.infer<typeof AipmManagedHookSchema>;
+export type UserHook = z.infer<typeof UserHookSchema>;
