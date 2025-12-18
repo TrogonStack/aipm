@@ -1,6 +1,6 @@
 {
   "name": "@trogonstack/aipm",
-  "version": "0.4.5",
+  "version": "0.5.0",
   "description": "AI Plugin Manager - Plugin manager for AI coding assistants (Claude Code, Cursor, and more). Sync plugins from multiple marketplaces.",
   "type": "module",
   "homepage": "https://github.com/TrogonStack/aipm",
