@@ -38,19 +38,19 @@ for (const target of targets) {
 
   const binary = target.os === 'windows' ? `${name}.exe` : name;
 
-  const result = await Bun.build({
-    entrypoints: ['./src/cli.ts'],
-    target: 'bun',
-    compile: {
-      target: target.bunTarget,
-      outfile: `dist/${binary}`,
-    },
-  });
+  const result = await $`bun build --compile --target=${target.bunTarget} ./src/cli.ts --outfile dist/${binary}`
+    .quiet()
+    .nothrow();
 
-  if (!result.success) {
+  if (result.exitCode !== 0) {
     console.error(`Failed to build ${target.os}-${target.arch}`);
-    for (const log of result.logs) {
-      console.error(log);
+    const stdout = result.stdout.toString();
+    const stderr = result.stderr.toString();
+    if (stdout) {
+      console.error(stdout);
+    }
+    if (stderr) {
+      console.error(stderr);
     }
     process.exit(1);
   }
