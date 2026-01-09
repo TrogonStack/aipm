@@ -1,8 +1,15 @@
-import { rm, stat } from 'node:fs/promises';
+import { readdir, rm, stat } from 'node:fs/promises';
 import { join } from 'node:path';
 import { z } from 'zod';
 import { getNotInitializedMessage, loadPluginsConfig } from '../config/loader';
-import { DIR_AIPM_NAMESPACE, DIR_HOOKS, DIR_MARKETPLACE, INTEGRATION_INCLUDE_ALL, PLUGIN_SUBDIRS } from '../constants';
+import {
+  DIR_AIPM_NAMESPACE,
+  DIR_HOOKS,
+  DIR_MARKETPLACE,
+  DIR_SKILLS,
+  INTEGRATION_INCLUDE_ALL,
+  PLUGIN_SUBDIRS,
+} from '../constants';
 import { getErrorMessage } from '../errors';
 import { ensureDir, fileExists } from '../helpers/fs';
 import { resolveMarketplacePath } from '../helpers/git';
@@ -74,17 +81,6 @@ export async function sync(options: SyncOptions = {}): Promise<void> {
     // Collect hooks early to enable cleanup even if no plugins are enabled
     const collectedPluginHooks: CursorHooksConfig[] = [];
 
-    if (enabledPlugins.length === 0) {
-      defaultIO.logInfo('No enabled plugins found');
-      // Clean up hooks from disabled/uninstalled plugins
-      if (!cmd.dryRun) {
-        await mergeHooks(targetDir, collectedPluginHooks);
-      }
-      return;
-    }
-
-    console.log(`\n🔄 Syncing ${enabledPlugins.length} enabled plugin(s)...\n`);
-
     const targetSubdirs = getEnabledSubdirs(cursorIntegration?.include);
 
     if (!cmd.dryRun) {
@@ -103,7 +99,41 @@ export async function sync(options: SyncOptions = {}): Promise<void> {
         }
         await ensureDir(aipmSubdirPath);
       }
+
+      // Clean up flattened skill directories and nested aipm structure for disabled plugins
+      // Both flattened (aipm-*) and nested (aipm/marketplace/plugin) skill paths need cleanup
+      // This must run even if no plugins are enabled to clean up skills from disabled plugins
+      const skillsDir = join(targetDir, DIR_SKILLS);
+      try {
+        const entries = await readdir(skillsDir, { withFileTypes: true });
+        for (const entry of entries) {
+          if (entry.isDirectory()) {
+            if (entry.name.startsWith('aipm-')) {
+              // Remove flattened skill directories
+              await rm(join(skillsDir, entry.name), { recursive: true, force: true });
+              defaultIO.logInfo(`Cleaned up flattened skill: ${entry.name}`);
+            } else if (entry.name === DIR_AIPM_NAMESPACE) {
+              // Remove entire nested aipm structure which gets rebuilt
+              await rm(join(skillsDir, entry.name), { recursive: true, force: true });
+              defaultIO.logInfo(`Cleaned up nested skills structure`);
+            }
+          }
+        }
+      } catch {
+        // Skills directory doesn't exist yet, which is fine
+      }
     }
+
+    if (enabledPlugins.length === 0) {
+      defaultIO.logInfo('No enabled plugins found');
+      // Clean up hooks from disabled/uninstalled plugins
+      if (!cmd.dryRun) {
+        await mergeHooks(targetDir, collectedPluginHooks);
+      }
+      return;
+    }
+
+    console.log(`\n🔄 Syncing ${enabledPlugins.length} enabled plugin(s)...\n`);
 
     let installedCount = 0;
     let skippedCount = 0;

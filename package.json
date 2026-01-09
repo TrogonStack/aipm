@@ -21,7 +21,7 @@
     "ci:all": "bun run format:check && bun run typecheck && bun run test",
     "test": "bun test",
     "test:coverage": "bun test --coverage",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsgo --noEmit",
     "dev": "bun --watch src/cli.ts",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
@@ -33,6 +33,7 @@
     "@straw-hat/prettier-config": "3.1.5",
     "@types/bun": "1.2.2",
     "@types/lodash.merge": "4.6.9",
+    "@typescript/native-preview": "7.0.0-dev.20251014.1",
     "prettier": "3.6.2"
   },
   "peerDependencies": {
