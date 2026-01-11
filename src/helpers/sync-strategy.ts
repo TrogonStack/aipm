@@ -1,3 +1,4 @@
+import type { Dirent } from 'node:fs';
 import { cp, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { basename, extname, join } from 'node:path';
 import { DIR_AIPM_NAMESPACE, DIR_HOOKS, DIR_SKILLS, FILE_HOOKS_JSON } from '../constants';
@@ -32,7 +33,7 @@ export type SyncResult = AipmPluginSyncResult | ClaudeCodePluginSyncResult;
  * - commands/*.md → .cursor/commands/aipm/marketplace-name/plugin-name/
  * - rules/*.mdc → .cursor/rules/aipm/marketplace-name/plugin-name/
  * - agents/*.md → .cursor/agents/aipm/marketplace-name/plugin-name/
- * - skills/*.md → .cursor/skills/aipm/marketplace-name/plugin-name/
+ * - skills/ → .cursor/skills/aipm-marketplace-plugin/ (flattened dir name, see #10238)
  * - hooks/* → .cursor/hooks/aipm/marketplace-name/plugin-name/
  */
 export async function syncPluginToCursor(
@@ -74,13 +75,40 @@ export async function syncPluginToCursor(
   );
   result.agentsCount = agentsResult;
 
-  // Sync skills/*.md to .cursor/skills/aipm/marketplace/plugin/
-  const skillsResult = await syncDirectory(
-    join(pluginPath, 'skills'),
-    join(cursorDir, 'skills', DIR_AIPM_NAMESPACE, marketplaceName, pluginName),
-    ['.md'],
-  );
-  result.skillsCount = skillsResult;
+  // Sync skills/ to .cursor/skills/aipm-marketplace-plugin-skill/ (flat directory names)
+  // Each skill subdirectory gets its own flattened name to avoid nesting
+  // Also handles files directly in skills/ directory for backwards compatibility
+  const skillsSourcePath = join(pluginPath, 'skills');
+
+  if (await fileExists(skillsSourcePath)) {
+    let entries: Dirent[] = [];
+    try {
+      entries = await readdir(skillsSourcePath, { withFileTypes: true });
+    } catch (error: unknown) {
+      if (!isFileNotFoundError(error)) {
+        throw new DirectoryNotFoundError(skillsSourcePath, { cause: error });
+      }
+    }
+
+    for (const entry of entries) {
+      const skillSourcePath = join(skillsSourcePath, entry.name);
+
+      if (entry.isDirectory()) {
+        // Flatten skill subdirectories to avoid nesting limitations
+        const flattenedSkillName = getFlattenedSkillName(DIR_AIPM_NAMESPACE, marketplaceName, pluginName, entry.name);
+        const skillTargetPath = join(cursorDir, 'skills', flattenedSkillName);
+        await ensureDir(join(cursorDir, 'skills'));
+        await cp(skillSourcePath, skillTargetPath, { recursive: true });
+        result.skillsCount++;
+      } else if (entry.isFile()) {
+        // Handle files directly in skills/ directory (maintain nested structure for backwards compatibility)
+        const fileTargetPath = join(cursorDir, 'skills', DIR_AIPM_NAMESPACE, marketplaceName, pluginName, entry.name);
+        await ensureDir(join(cursorDir, 'skills', DIR_AIPM_NAMESPACE, marketplaceName, pluginName));
+        await cp(skillSourcePath, fileTargetPath);
+        result.skillsCount++;
+      }
+    }
+  }
 
   // Sync hooks - check for hooks.json and translate if needed
   const hooksResult = await syncHooks(pluginPath, marketplaceName, pluginName, cursorDir);
@@ -250,6 +278,37 @@ async function syncHooks(
 }
 
 /**
+ * Generates a flattened skill name using delimiter
+ * e.g., "aipm-marketplace-plugin" or "aipm-marketplace-plugin-skill-subskill"
+ *
+ * Claude Code does not support nested directories for skills.
+ * See: https://github.com/anthropics/claude-code/issues/10238
+ * All skills must be flat files in .cursor/skills/ directory.
+ *
+ * NOTE: Using hyphens as delimiters creates a theoretical risk of name collisions
+ * if marketplace or plugin names contain hyphens. For example:
+ * - marketplace "a-b", plugin "c-d" → "aipm-a-b-c-d"
+ * - marketplace "a", plugin "b-c-d" → "aipm-a-b-c-d" (collision!)
+ * This is mitigated in practice by:
+ * 1. Centralized marketplace management (limited namespace)
+ * 2. Using "/" separators in marketplace names (rare hyphens)
+ * 3. Plugin names typically use simple identifiers
+ * Consider adding a hash suffix if collisions become an issue in production.
+ */
+function getFlattenedSkillName(
+  namespace: string,
+  marketplaceName: string,
+  pluginName: string,
+  skillPath?: string,
+): string {
+  const parts = [namespace, marketplaceName.replace(/\//g, '-'), pluginName];
+  if (skillPath) {
+    parts.push(skillPath.replace(/\//g, '-'));
+  }
+  return parts.join('-');
+}
+
+/**
  * Syncs a directory, copying files with specified extensions
  * @param sourceDir Source directory
  * @param targetDir Target directory
@@ -296,6 +355,10 @@ async function syncDirectory(sourceDir: string, targetDir: string, extensions: s
  * Syncs a Claude Code meta-plugin to Cursor directories.
  * Meta-plugins point to the marketplace root and define skills in the manifest.
  * We sync each skill directory listed in the manifest's skills array.
+ *
+ * Skill directory paths are flattened to avoid nested directories
+ * (Claude Code does not support nested skill directories).
+ * See: https://github.com/anthropics/claude-code/issues/10238
  */
 export async function syncMetaPluginToCursor(
   marketplacePath: string,
@@ -309,17 +372,28 @@ export async function syncMetaPluginToCursor(
     return { type: 'claudecode', skillsCount: 0 };
   }
 
+  await ensureDir(join(cursorDir, DIR_SKILLS));
   let skillsCount = 0;
 
   for (const skillPath of pluginEntry.skills) {
     const normalizedSkillPath = skillPath.replace(/^\.\//, '');
     const fullSkillPath = join(marketplacePath, normalizedSkillPath);
 
-    const marketplaceSegments = marketplaceName.split('/');
-    const targetPath = join(cursorDir, DIR_SKILLS, DIR_AIPM_NAMESPACE, ...marketplaceSegments, normalizedSkillPath);
+    // Strip 'skills/' prefix if present, then flatten the remaining path
+    // e.g., 'skills/document-skills/xlsx' -> 'document-skills/xlsx' -> 'document-skills-xlsx'
+    const skillNamePath = normalizedSkillPath.replace(/^skills\//, '');
+    const flattenedSkillName = getFlattenedSkillName(DIR_AIPM_NAMESPACE, marketplaceName, pluginName, skillNamePath);
+    const targetPath = join(cursorDir, DIR_SKILLS, flattenedSkillName);
 
-    const count = await syncDirectory(fullSkillPath, targetPath, ['.md']);
-    skillsCount += count;
+    try {
+      await cp(fullSkillPath, targetPath, { recursive: true });
+      skillsCount++;
+    } catch (error: unknown) {
+      if (!isFileNotFoundError(error)) {
+        throw error;
+      }
+      defaultIO.logInfo(`⚠️  Skill not found in manifest: ${skillNamePath} (expected at ${fullSkillPath})`);
+    }
   }
 
   return { type: 'claudecode', skillsCount };
