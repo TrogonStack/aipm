@@ -8,6 +8,8 @@ import {
   FILE_CLAUDE_INSTALLED_PLUGINS,
   FILE_CLAUDE_KNOWN_MARKETPLACES,
 } from '../constants';
+import type { MarketplaceSource } from '../schema';
+import { MarketplaceSourceSchema } from '../schema';
 import { fileExists } from './fs';
 
 /**
@@ -313,13 +315,13 @@ function applyFallbackUrlBranch(
 export function convertClaudeMarketplaceToAIPM(
   marketplaceName: string,
   marketplaceConfig: ClaudeMarketplaceObjectEntry,
-) {
+): MarketplaceSource {
   // If installLocation exists, treat as directory (already cloned)
   if (marketplaceConfig.installLocation) {
-    return {
+    return MarketplaceSourceSchema.parse({
       source: 'directory',
       path: marketplaceConfig.installLocation,
-    };
+    });
   }
 
   // Extract source info and apply fallbacks
@@ -331,15 +333,15 @@ export function convertClaudeMarketplaceToAIPM(
   if (finalSourceInfo.source === 'directory' && path) {
     // Resolve path relative to Claude Code's plugins directory
     const resolvedPath = getClaudeCodeMarketplacePath(marketplaceName, marketplaceConfig);
-    return {
+    return MarketplaceSourceSchema.parse({
       source: 'directory',
       path: resolvedPath,
-    };
+    });
   }
 
-  return {
+  return MarketplaceSourceSchema.parse({
     source: finalSourceInfo.source,
     url: finalSourceInfo.url,
     branch: finalSourceInfo.branch,
-  };
+  });
 }

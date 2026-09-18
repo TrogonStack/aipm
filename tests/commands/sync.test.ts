@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
-import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { init } from '../../src/commands/init';
@@ -709,6 +709,60 @@ describe('sync command', () => {
         // No hooks left - this is valid (all AIPM hooks were cleaned up)
         expect(updatedHooks.hooks.beforeSubmitPrompt).toBeUndefined();
       }
+    });
+
+    test('removes orphaned flattened skill directories when plugins are disabled', async () => {
+      const pluginPath = join(marketplaceDir, 'skill-plugin');
+      await mkdir(pluginPath, { recursive: true });
+      await mkdir(join(pluginPath, '.claude-plugin'));
+      await writeFile(
+        join(pluginPath, '.claude-plugin', 'plugin.json'),
+        JSON.stringify({
+          name: 'skill-plugin',
+          version: '1.0.0',
+          description: 'Plugin with skills',
+        }),
+      );
+
+      // Create skills directory with subdirectories
+      await mkdir(join(pluginPath, 'skills', 'skill1'), { recursive: true });
+      await writeFile(join(pluginPath, 'skills', 'skill1', 'SKILL.md'), '# Skill 1');
+      await mkdir(join(pluginPath, 'skills', 'skill2'), { recursive: true });
+      await writeFile(join(pluginPath, 'skills', 'skill2', 'SKILL.md'), '# Skill 2');
+
+      await marketplaceAdd({
+        name: 'local',
+        path: './marketplace',
+        cwd: testDir,
+      });
+      await pluginEnable({
+        pluginId: 'skill-plugin@local',
+        cwd: testDir,
+      });
+
+      // First sync - creates flattened skill directories
+      await sync({ cwd: testDir });
+
+      // Verify flattened skills were created
+      const skillsDir = join(testDir, '.cursor', 'skills');
+      let dirEntries = await readdir(skillsDir, { withFileTypes: true });
+      let flattenedSkills = dirEntries.filter((e) => e.isDirectory() && e.name.startsWith('aipm-'));
+      expect(flattenedSkills.length).toBeGreaterThan(0);
+
+      // Disable the plugin
+      const { pluginDisable } = await import('../../src/commands/plugin-disable');
+      await pluginDisable({
+        pluginId: 'skill-plugin@local',
+        cwd: testDir,
+      });
+
+      // Sync again - should remove orphaned flattened skill directories
+      await sync({ cwd: testDir });
+
+      // Verify flattened skills were cleaned up
+      dirEntries = await readdir(skillsDir, { withFileTypes: true });
+      flattenedSkills = dirEntries.filter((e) => e.isDirectory() && e.name.startsWith('aipm-'));
+      expect(flattenedSkills.length).toBe(0);
     });
   });
 });

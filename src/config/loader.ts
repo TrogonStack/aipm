@@ -152,3 +152,28 @@ export function getConfigPaths(baseDir: string) {
     gitignore: join(baseDir, FILE_GITIGNORE),
   };
 }
+
+function accumulateClaudeMarketplace(
+  acc: Record<string, MarketplaceSource>,
+  [marketplaceName, marketplaceConfig]: [string, unknown],
+): Record<string, MarketplaceSource> {
+  const prefixedName = `claude/${marketplaceName}`;
+  acc[prefixedName] = convertClaudeMarketplaceToAIPM(marketplaceName, marketplaceConfig as never);
+  return acc;
+}
+
+/**
+ * Load Claude Code's marketplaces without requiring AIPM config
+ */
+export async function loadClaudeCodeMarketplaces(): Promise<Record<string, MarketplaceSource>> {
+  if (!(await isClaudeCodeInstalled())) {
+    return {};
+  }
+
+  const claudeCodeMarketplaces = await readClaudeCodeMarketplaces();
+
+  return Object.entries(claudeCodeMarketplaces).reduce(
+    accumulateClaudeMarketplace,
+    {} as Record<string, MarketplaceSource>,
+  );
+}

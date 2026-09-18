@@ -1,4 +1,4 @@
-import { rm } from 'node:fs/promises';
+import { readdir, rm } from 'node:fs/promises';
 import { join } from 'node:path';
 import { z } from 'zod';
 import { getConfigPath, getNotInitializedMessage, loadPluginsConfig } from '../config/loader';
@@ -147,6 +147,77 @@ export async function pluginUninstall(options: unknown): Promise<void> {
                 }
               }
             }
+
+            // Remove flattened skill directories for this plugin
+            // Pattern: .cursor/skills/aipm-<marketplace>-<plugin>[-subskill]
+            // Must avoid prefix collisions when plugin names are prefixes of others
+            // (e.g., "my-plugin" shouldn't match "my-plugin-extra")
+            const skillsDir = join(cwd, DIR_CURSOR, DIR_SKILLS);
+            try {
+              const entries = await readdir(skillsDir, { withFileTypes: true });
+              const flattenedPrefix = `aipm-${marketplaceName.replace(/\//g, '-')}-${pluginName}`;
+
+              // Check for conflicting plugin names in this marketplace
+              const otherPluginsInMarketplace = Object.keys(config.plugins).filter(
+                (id) => id.endsWith(`@${marketplaceName}`) && id !== cmd.pluginId,
+              );
+
+              const hasConflictingNames = otherPluginsInMarketplace.some((id) => {
+                const otherPluginName = id.substring(0, id.lastIndexOf('@'));
+                return otherPluginName.startsWith(pluginName) && otherPluginName !== pluginName;
+              });
+
+              // When conflicts exist, we need exact skill information to avoid false positives
+              // Read the plugin's skills directory to get the exact list
+              const skillsToDelete = new Set<string>();
+
+              if (hasConflictingNames && pluginPath) {
+                // Load exact skill information from plugin directory
+                const skillsSourcePath = join(pluginPath, 'skills');
+                try {
+                  const skillEntries = await readdir(skillsSourcePath, { withFileTypes: true });
+                  for (const skillEntry of skillEntries) {
+                    if (skillEntry.isDirectory()) {
+                      // Reconstruct the exact flattened name for this skill
+                      const flatSkillName = `${flattenedPrefix}-${skillEntry.name}`;
+                      skillsToDelete.add(flatSkillName);
+                    }
+                  }
+                } catch {
+                  // No skills directory - plugin has no skills
+                }
+              }
+
+              for (const entry of entries) {
+                if (!entry.isDirectory()) continue;
+
+                let shouldDelete = false;
+
+                if (hasConflictingNames) {
+                  // With conflicts, only delete skills we explicitly found in the plugin directory
+                  shouldDelete = skillsToDelete.has(entry.name);
+                } else {
+                  // No conflicts - safe to use prefix matching
+                  shouldDelete = entry.name === flattenedPrefix || entry.name.startsWith(flattenedPrefix + '-');
+                }
+
+                if (shouldDelete) {
+                  try {
+                    await rm(join(skillsDir, entry.name), { recursive: true });
+                    deletedCount++;
+                  } catch (error) {
+                    if (!isFileNotFoundError(error)) {
+                      throw error;
+                    }
+                  }
+                }
+              }
+            } catch (error) {
+              // Ignore errors reading skills directory
+              if (!isFileNotFoundError(error)) {
+                throw error;
+              }
+            }
           }
         } else {
           // Marketplace config missing - can still delete AIPM plugins, but not Claude Code meta-plugins
@@ -169,6 +240,56 @@ export async function pluginUninstall(options: unknown): Promise<void> {
                 if (!isFileNotFoundError(error)) {
                   throw error;
                 }
+              }
+            }
+
+            // Remove flattened skill directories for this plugin
+            // Even when marketplace config is missing, we can clean up flattened skills
+            // using prefix matching (safe when no conflicts exist)
+            const skillsDir = join(cwd, DIR_CURSOR, DIR_SKILLS);
+            try {
+              const entries = await readdir(skillsDir, { withFileTypes: true });
+              const flattenedPrefix = `aipm-${marketplaceName.replace(/\//g, '-')}-${pluginName}`;
+
+              // Check for conflicting plugin names in this marketplace
+              const otherPluginsInMarketplace = Object.keys(config.plugins).filter(
+                (id) => id.endsWith(`@${marketplaceName}`) && id !== cmd.pluginId,
+              );
+
+              const hasConflictingNames = otherPluginsInMarketplace.some((id) => {
+                const otherPluginName = id.substring(0, id.lastIndexOf('@'));
+                return otherPluginName.startsWith(pluginName) && otherPluginName !== pluginName;
+              });
+
+              for (const entry of entries) {
+                if (!entry.isDirectory()) continue;
+
+                let shouldDelete = false;
+
+                if (hasConflictingNames) {
+                  // With conflicts and no marketplace config, we can't read actual skills
+                  // Be conservative and don't delete anything - admin should manually cleanup
+                  shouldDelete = false;
+                } else {
+                  // No conflicts - safe to use prefix matching
+                  shouldDelete = entry.name === flattenedPrefix || entry.name.startsWith(flattenedPrefix + '-');
+                }
+
+                if (shouldDelete) {
+                  try {
+                    await rm(join(skillsDir, entry.name), { recursive: true });
+                    deletedCount++;
+                  } catch (error) {
+                    if (!isFileNotFoundError(error)) {
+                      throw error;
+                    }
+                  }
+                }
+              }
+            } catch (error) {
+              // Ignore errors reading skills directory
+              if (!isFileNotFoundError(error)) {
+                throw error;
               }
             }
           }
