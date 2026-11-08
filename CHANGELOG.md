@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.1](https://github.com/TrogonStack/aipm/compare/v0.5.0...v0.5.1) (2026-11-08)
+
+
+### Bug Fixes
+
+* **ci:** give the Releaser key step its project ([#48](https://github.com/TrogonStack/aipm/issues/48)) ([c69ff49](https://github.com/TrogonStack/aipm/commit/c69ff4924f2156534dd2991e61cec4c3805b6356))
+
 ## [0.5.0](https://github.com/TrogonStack/aipm/compare/v0.4.5...v0.5.0) (2025-12-18)
 
 
